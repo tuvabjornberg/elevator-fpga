@@ -28,7 +28,7 @@
 
 */db/
 */incremental_db/
-*/simulation/
+#*/simulation/
 */timing/
 */testbench/
 */*_sim/
@@ -36,3 +36,5 @@ incremental_db/
 db/
 output_files/
 PLLJ_PLLSPE_INFO.txt
+
+simulation/modelsim/rtl_work/
