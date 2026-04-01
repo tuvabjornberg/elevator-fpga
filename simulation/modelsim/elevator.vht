@@ -17,7 +17,7 @@
 -- suit user's needs .Comments are provided in each section to help the user  
 -- fill out necessary details.                                                
 -- ***************************************************************************
--- Generated on "04/01/2026 13:15:35"
+-- Generated on "04/01/2026 16:47:02"
                                                             
 -- Vhdl Test Bench template for design  :  elevator
 -- 
@@ -35,6 +35,7 @@ ARCHITECTURE elevator_arch OF elevator_vhd_tst IS
 SIGNAL clk : STD_LOGIC;
 SIGNAL column : STD_LOGIC_VECTOR(3 DOWNTO 0);
 SIGNAL disp_nr1 : STD_LOGIC;
+SIGNAL led1_out : STD_LOGIC;
 SIGNAL reset : STD_LOGIC;
 SIGNAL row : STD_LOGIC_VECTOR(3 DOWNTO 0);
 SIGNAL seg_out : STD_LOGIC_VECTOR(6 DOWNTO 0);
@@ -43,6 +44,7 @@ COMPONENT elevator
 	clk : IN STD_LOGIC;
 	column : OUT STD_LOGIC_VECTOR(3 DOWNTO 0);
 	disp_nr1 : OUT STD_LOGIC;
+	led1_out : OUT STD_LOGIC;
 	reset : IN STD_LOGIC;
 	row : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
 	seg_out : OUT STD_LOGIC_VECTOR(6 DOWNTO 0)
@@ -55,6 +57,7 @@ BEGIN
 	clk => clk,
 	column => column,
 	disp_nr1 => disp_nr1,
+	led1_out => led1_out,
 	reset => reset,
 	row => row,
 	seg_out => seg_out
@@ -64,7 +67,7 @@ init : PROCESS
 BEGIN                                                        
         -- code that executes only once                      
 WAIT;                                                       
-END PROCESS init;
+END PROCESS init; 
 
 clk_process : process
 begin
@@ -73,34 +76,32 @@ begin
     clk <= '1';
     wait for 50 ns;
 end process clk_process;
-                                           
+                                          
 always : PROCESS                                              
 -- optional sensitivity list                                  
 -- (        )                                                 
 -- variable declarations                                      
 BEGIN                                                         
-        -- code executes for every event on sensitivity list 
-		 
-	wait until rising_edge(clk);
-	row <= "1111";  -- all rows high
-	WAIT FOR 50 ns;
+        -- code executes for every event on sensitivity list  
+	row <= "1111"; 
+	reset <= '1'; 
+	wait for 50 ns;
+	reset <= '0';
+	wait for 50 ns;
+	reset <= '1'; 
+	
+	
+	wait until column = "1011";  -- 2
+	row <= "0111";              
+	wait for 200 ns;
+	row <= "1111";              
+	
+	wait until column = "0111";  -- *
+	row <= "1110";              
+	wait for 200 ns;
+	row <= "1111";              
 
-	wait until rising_edge(clk);
-	row <= "1110";
-	WAIT FOR 50 ns;
 	
-	wait until rising_edge(clk);	
-	row <= "1101";
-	WAIT FOR 50 ns;
-	
-	wait until rising_edge(clk);
-	row <= "1011";
-	WAIT FOR 50 ns;
-	
-	wait until rising_edge(clk);
-	row <= "0111";
-	WAIT FOR 50 ns;
-			
 WAIT;                                                        
 END PROCESS always;                                          
 END elevator_arch;

@@ -12,7 +12,7 @@
 # 
 # vcom -93 -work work {C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/ReverseSevenSegmentDecoding.vhd}
 # Model Technology ModelSim - Intel FPGA Edition vcom 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 13:20:32 on Apr 01,2026
+# Start time: 17:20:53 on Apr 01,2026
 # vcom -reportprogress 300 -93 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/ReverseSevenSegmentDecoding.vhd 
 # -- Loading package STANDARD
 # -- Loading package TEXTIO
@@ -20,11 +20,11 @@
 # -- Compiling package ReverseSevenSegmentDecoding
 # -- Compiling package body ReverseSevenSegmentDecoding
 # -- Loading package ReverseSevenSegmentDecoding
-# End time: 13:20:32 on Apr 01,2026, Elapsed time: 0:00:00
+# End time: 17:20:53 on Apr 01,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # vcom -93 -work work {C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/elevator.vhd}
 # Model Technology ModelSim - Intel FPGA Edition vcom 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 13:20:32 on Apr 01,2026
+# Start time: 17:20:53 on Apr 01,2026
 # vcom -reportprogress 300 -93 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/elevator.vhd 
 # -- Loading package STANDARD
 # -- Loading package TEXTIO
@@ -33,24 +33,24 @@
 # -- Loading package ReverseSevenSegmentDecoding
 # -- Compiling entity elevator
 # -- Compiling architecture rtl of elevator
-# End time: 13:20:32 on Apr 01,2026, Elapsed time: 0:00:00
+# End time: 17:20:53 on Apr 01,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # 
 # vcom -93 -work work {C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht}
 # Model Technology ModelSim - Intel FPGA Edition vcom 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 13:20:32 on Apr 01,2026
+# Start time: 17:20:54 on Apr 01,2026
 # vcom -reportprogress 300 -93 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht 
 # -- Loading package STANDARD
 # -- Loading package TEXTIO
 # -- Loading package std_logic_1164
 # -- Compiling entity elevator_vhd_tst
 # -- Compiling architecture elevator_arch of elevator_vhd_tst
-# End time: 13:20:32 on Apr 01,2026, Elapsed time: 0:00:00
+# End time: 17:20:54 on Apr 01,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # 
 # vsim -t 1ps -L altera -L lpm -L sgate -L altera_mf -L altera_lnsim -L cyclonev -L rtl_work -L work -voptargs="+acc"  elevator_vhd_tst
 # vsim -t 1ps -L altera -L lpm -L sgate -L altera_mf -L altera_lnsim -L cyclonev -L rtl_work -L work -voptargs=""+acc"" elevator_vhd_tst 
-# Start time: 13:20:32 on Apr 01,2026
+# Start time: 17:20:54 on Apr 01,2026
 # Loading std.standard
 # Loading std.textio(body)
 # Loading ieee.std_logic_1164(body)
@@ -65,19 +65,93 @@
 # view signals
 # .main_pane.objects.interior.cs.body.tree
 # run -all
-vcom -93 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht
+add wave -position end  sim:/elevator_vhd_tst/i1/row_index
+add wave -position end  sim:/elevator_vhd_tst/i1/col_index
+add wave -position end  sim:/elevator_vhd_tst/i1/current_key
+add wave -position end  sim:/elevator_vhd_tst/i1/prev_row
+add wave -position end  sim:/elevator_vhd_tst/i1/enter
+add wave -position end  sim:/elevator_vhd_tst/i1/CURRENT_STATE
+add wave -position end  sim:/elevator_vhd_tst/i1/NEXT_STATE
+restart
+run -all
+vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht
 # Model Technology ModelSim - Intel FPGA Edition vcom 10.5b Compiler 2016.10 Oct  5 2016
-# Start time: 13:29:03 on Apr 01,2026
-# vcom -reportprogress 300 -93 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht 
+# Start time: 17:36:13 on Apr 01,2026
+# vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht 
 # -- Loading package STANDARD
 # -- Loading package TEXTIO
 # -- Loading package std_logic_1164
 # -- Compiling entity elevator_vhd_tst
 # -- Compiling architecture elevator_arch of elevator_vhd_tst
-# End time: 13:29:03 on Apr 01,2026, Elapsed time: 0:00:00
+# End time: 17:36:13 on Apr 01,2026, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
-restart -f
+vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht
+# Model Technology ModelSim - Intel FPGA Edition vcom 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 17:36:14 on Apr 01,2026
+# vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht 
+# -- Loading package STANDARD
+# -- Loading package TEXTIO
+# -- Loading package std_logic_1164
+# -- Compiling entity elevator_vhd_tst
+# -- Compiling architecture elevator_arch of elevator_vhd_tst
+# End time: 17:36:15 on Apr 01,2026, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 0
+restart
 # Loading work.elevator_vhd_tst(elevator_arch)
 run -all
-restart -f
+vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht
+# Model Technology ModelSim - Intel FPGA Edition vcom 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 17:40:12 on Apr 01,2026
+# vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht 
+# -- Loading package STANDARD
+# -- Loading package TEXTIO
+# -- Loading package std_logic_1164
+# -- Compiling entity elevator_vhd_tst
+# -- Compiling architecture elevator_arch of elevator_vhd_tst
+# End time: 17:40:12 on Apr 01,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+restart
+# Loading work.elevator_vhd_tst(elevator_arch)
+run -all
+restart
+restart
+vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht
+# Model Technology ModelSim - Intel FPGA Edition vcom 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 17:41:42 on Apr 01,2026
+# vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht 
+# -- Loading package STANDARD
+# -- Loading package TEXTIO
+# -- Loading package std_logic_1164
+# -- Compiling entity elevator_vhd_tst
+# -- Compiling architecture elevator_arch of elevator_vhd_tst
+# End time: 17:41:42 on Apr 01,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+run -all
+vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht
+# Model Technology ModelSim - Intel FPGA Edition vcom 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 17:42:33 on Apr 01,2026
+# vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht 
+# -- Loading package STANDARD
+# -- Loading package TEXTIO
+# -- Loading package std_logic_1164
+# -- Compiling entity elevator_vhd_tst
+# -- Compiling architecture elevator_arch of elevator_vhd_tst
+# End time: 17:42:33 on Apr 01,2026, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+restart
+# Loading work.elevator_vhd_tst(elevator_arch)
+run -all
+vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht
+# Model Technology ModelSim - Intel FPGA Edition vcom 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 17:46:31 on Apr 01,2026
+# vcom -reportprogress 300 -work work C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht 
+# -- Loading package STANDARD
+# -- Loading package TEXTIO
+# -- Loading package std_logic_1164
+# -- Compiling entity elevator_vhd_tst
+# -- Compiling architecture elevator_arch of elevator_vhd_tst
+# End time: 17:46:32 on Apr 01,2026, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 0
+restart
+# Loading work.elevator_vhd_tst(elevator_arch)
 run -all
