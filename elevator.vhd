@@ -3,6 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.ReverseSevenSegmentDecoding.all;
+use work.keypad.all;
 
 
 entity elevator is
@@ -21,10 +22,12 @@ end entity;
 architecture rtl of elevator is	
 signal row_index : std_logic_vector(1 downto 0) := "11"; 
 signal col_index : std_logic_vector(1 downto 0) := "01"; 
-signal current_key : std_logic_vector(3 downto 0) := "1101"; 
+signal previous_key : std_logic_vector (3 downto 0) := "1101";
+signal current_key : std_logic_vector(3 downto 0) := "1101"; -- 1101 = index 13 = "0" on keypad
 signal prev_row : std_logic_vector(3 downto 0) := "1111"; -- for no-bouncing guarantee
 
 signal enter : std_logic := '0'; 
+signal confirmed_floor : std_logic_vector(3 downto 0) := "1101";
 
 type STATE_TYPE is (idle, col0, col1, col2, col3);
 signal CURRENT_STATE : STATE_TYPE;
@@ -38,11 +41,13 @@ begin
 		begin
 			if reset = '0' then
 				current_key <= "1101"; 
+				previous_key <= "1101"; 
 				seg_out <= to_ReverseSevenSegment("1101"); --0
 				disp_nr1 <= '1';
 				
 				enter <= '0'; 
 				led1_out <= '0'; 
+				confirmed_floor <= "1101"; 
 				
 				CURRENT_STATE <= idle;
 				
@@ -84,22 +89,11 @@ begin
 							NEXT_STATE <= idle;
 					end case;
 					
-					if CURRENT_STATE /= idle then
-						if row = "0111" then
-							row_index <= "11";
-						elsif row = "1011" then
-							row_index <= "10";
-						elsif row = "1101" then
-							row_index <= "01";
-						elsif row = "1110" then
-							row_index <= "00";
-						else
-						end if;
-					end if; 
 					
 					-- no key press and delay for debouncing
 					if row /= "1111" and prev_row = "1111" then
-						current_key <= row_index & col_index;
+						previous_key <= current_key; 
+						current_key <= map_key(decode_row(row), col_index);
 						disp_nr1 <= '1';
 					end if; 
 					prev_row <= row;
@@ -109,7 +103,8 @@ begin
 					-- * pressed (enter)
 					if current_key = "1100" then
 						enter <= '1';
-						led1_out <= '1'; 
+						led1_out <= '1';
+						confirmed_floor <= previous_key; 
 					else
 						enter <= '0';
 						led1_out <= '0'; 

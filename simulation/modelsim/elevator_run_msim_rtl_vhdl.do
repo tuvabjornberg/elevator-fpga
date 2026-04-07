@@ -6,6 +6,7 @@ vlib rtl_work
 vmap work rtl_work
 
 vcom -93 -work work {C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/ReverseSevenSegmentDecoding.vhd}
+vcom -93 -work work {C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/keypad.vhd}
 vcom -93 -work work {C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/elevator.vhd}
 
 vcom -93 -work work {C:/Users/tuvab/OneDrive/Dokument/VHDL/elevator-fpga/simulation/modelsim/elevator.vht}

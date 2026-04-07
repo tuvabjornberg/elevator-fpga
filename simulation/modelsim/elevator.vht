@@ -93,12 +93,12 @@ BEGIN
 	
 	wait until column = "1011";  -- 2
 	row <= "0111";              
-	wait for 200 ns;
+	wait for 5 ms;
 	row <= "1111";              
 	
 	wait until column = "0111";  -- *
 	row <= "1110";              
-	wait for 200 ns;
+	wait for 5 ms;
 	row <= "1111";              
 
 	
