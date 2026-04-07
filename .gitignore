@@ -38,8 +38,10 @@ output_files/
 PLLJ_PLLSPE_INFO.txt
 
 simulation/modelsim/msim_transcript*
+simulation/modelsim/modelsim.ini*
 simulation/modelsim/rtl_work/
 *.bak
 *.bak*
 simulation/**/*.do
 *.xrf
+*.wlf
