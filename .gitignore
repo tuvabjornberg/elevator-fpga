@@ -45,3 +45,5 @@ simulation/modelsim/rtl_work/
 simulation/**/*.do
 *.xrf
 *.wlf
+*.sft
+*.vho
