@@ -14,7 +14,15 @@ entity elevator is
 		column : out std_logic_vector(3 downto 0);
 		seg_out : out std_logic_vector(6 downto 0);
 		disp_nr1 : out std_logic;
-		led1_out : out std_logic
+		led1_out : out std_logic;
+		
+		step : out std_logic; -- rising edge causes the indexer to advance 
+		dir : out std_logic; -- direction of stepping 
+		en : inout std_logic; -- Logic low to disable device outputs; logic high to enable. Also used for fault indication. Pulled logic low in fault condition.
+		nsleep : out std_logic; -- sleep mode input
+		stop : in std_logic;
+		
+		em_stop : in std_logic
 	);
 
 end entity;
@@ -29,11 +37,19 @@ signal prev_row : std_logic_vector(3 downto 0) := "1111"; -- for no-bouncing gua
 signal enter : std_logic := '0'; 
 signal confirmed_floor : std_logic_vector(3 downto 0) := "1101";
 
-type STATE_TYPE is (idle, col0, col1, col2, col3);
-signal CURRENT_STATE : STATE_TYPE;
-signal NEXT_STATE : STATE_TYPE;
+type STATE_TYPE_KEYPAD is (idle, col0, col1, col2, col3);
+signal CURRENT_STATE_KEYPAD : STATE_TYPE_KEYPAD;
+signal NEXT_STATE_KEYPAD : STATE_TYPE_KEYPAD;
 
-signal count: integer := 1; 
+type STATE_TYPE_LIFT is (idle, calibrate, move_up, move_down, stopped);
+signal CURRENT_STATE_LIFT : STATE_TYPE_LIFT;
+signal NEXT_STATE_LIFT : STATE_TYPE_LIFT;
+
+signal count_keypad: integer := 1; -- 1kHz clock
+signal count_lift: integer := 1; -- 2000 stpes/s
+
+signal stepper_en : std_logic := '0'; -- toggles between 1 and 0 for the stepper motor
+signal calibrated : std_logic := '0'; 
 
 begin
 
@@ -42,51 +58,124 @@ begin
 			if reset = '0' then
 				current_key <= "1101"; 
 				previous_key <= "1101"; 
-				seg_out <= to_ReverseSevenSegment("1101"); --0
+				seg_out <= to_ReverseSevenSegment("1101"); -- 0
 				disp_nr1 <= '1';
 				
 				enter <= '0'; 
 				led1_out <= '0'; 
 				confirmed_floor <= "1101"; 
 				
-				CURRENT_STATE <= idle;
+				CURRENT_STATE_KEYPAD <= idle;
+				CURRENT_STATE_LIFT <= calibrate;
 				
 				row_index <= "11";
 				col_index <= "01";
 				
-				count <= 1;
+				count_keypad <= 1;
+							
 	
-			elsif rising_edge(clk) then
-				count <= count + 1; 
+			elsif rising_edge(clk) then	
+				CURRENT_STATE_LIFT <= NEXT_STATE_LIFT;
 				
-				if count = 25000 then -- 50MHz --> 1kHz (clk divider)
-					count <= 1; 
-					CURRENT_STATE <= NEXT_STATE;
+				if em_stop = '0' then
+					NEXT_STATE_LIFT <= stopped; 
+					--step <= '0';
+					--dir <= '0';
+					--en <= '0';
+					--nsleep <= '0';
+					--CURRENT_STATE_LIFT <= stopped; 
+					--stepper_en <= '0';
+				end if;
+					
+				case CURRENT_STATE_LIFT is
+						when idle =>
+							--step <= '0';
+							--dir <= '0';
+							--en <= '0';
+							--nsleep <= '0';
+							NEXT_STATE_LIFT <= idle;
+						when calibrate =>
+							dir <= '1';
+							en <= '1';
+							nsleep <= '1';
+
+							if stop = '1' then
+								calibrated <= '1';
+								NEXT_STATE_LIFT <= stopped;
+							else
+								NEXT_STATE_LIFT <= calibrate;
+							end if;
+							
+							--if count_lift = 12500 then -- 50MHz/2000 = 25000 cycles per step => toggle every 12500
+							--	count_lift <= 1; 
+							--	if stepper_en = '1' then 
+							--		en <= '0';
+							--		nsleep <= '0';
+							--	else 
+							--		step <= '1'; -- now high for and entire cycle, motor technically only needs a pulse (dirac), possible to have step=1 high for 1 clk and step=0 for 12500 clk?
+							--		stepper_en <= '1';
+							--	end if;
+							--else 
+							--	count_lift <= count_lift + 1; 
+							--end if;
+							
+							if count_lift = 12500 then
+								step <= '1';
+								count_lift <= 0;
+							else
+								step <= '0';
+								count_lift <= count_lift + 1;
+							end if;
+								
+						when move_up =>
+						when move_down =>
+						when stopped =>
+							step <= '0';
+							dir <= '0';
+							en <= '0';
+							nsleep <= '0';
+							stepper_en <= '0';
+							NEXT_STATE_LIFT <= idle;
+						when others =>
+							step <= '0';
+							dir <= '0';
+							en <= '0';
+							nsleep <= '0';
+							stepper_en <= '0';
+							NEXT_STATE_LIFT <= idle;
+					end case;				 	
+				
+				
+				count_keypad <= count_keypad + 1; 
+				
+				if count_keypad = 25000 then -- 50MHz --> 1kHz (clk divider)
+					count_keypad <= 1; 
+					CURRENT_STATE_KEYPAD <= NEXT_STATE_KEYPAD;
 					
 	
-					case CURRENT_STATE is
+					case CURRENT_STATE_KEYPAD is
 						when idle =>
-							NEXT_STATE <= col0;
+							NEXT_STATE_KEYPAD <= col0;
 							
 						-- since keypad matrix is flipped, col0 --> col3 = logical (to me) 
 						when col0 =>
 							column <= "0111";
 							col_index <= "11";
-							NEXT_STATE <= col1; 
+							NEXT_STATE_KEYPAD <= col1; 
 						when col1 =>
 							column <= "1011";
 							col_index <= "10";
-							NEXT_STATE <= col2; 
+							NEXT_STATE_KEYPAD <= col2; 
 						when col2 =>
 							column <= "1101";
 							col_index <= "01";
-							NEXT_STATE <= col3; 
+							NEXT_STATE_KEYPAD <= col3; 
 						when col3 =>
 							column <= "1110";
 							col_index <= "00";
-							NEXT_STATE <= idle; 
+							NEXT_STATE_KEYPAD <= idle; 
 						when others =>
-							NEXT_STATE <= idle;
+							NEXT_STATE_KEYPAD <= idle;
 					end case;
 					
 					
@@ -105,6 +194,7 @@ begin
 						enter <= '1';
 						led1_out <= '1';
 						confirmed_floor <= previous_key; 
+						NEXT_STATE_LIFT <= move_up; --!!!!!!!!!!!!!!!!
 					else
 						enter <= '0';
 						led1_out <= '0'; 

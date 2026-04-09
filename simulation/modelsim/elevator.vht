@@ -17,7 +17,7 @@
 -- suit user's needs .Comments are provided in each section to help the user  
 -- fill out necessary details.                                                
 -- ***************************************************************************
--- Generated on "04/01/2026 16:47:02"
+-- Generated on "04/08/2026 09:18:53"
                                                             
 -- Vhdl Test Bench template for design  :  elevator
 -- 
@@ -34,20 +34,32 @@ ARCHITECTURE elevator_arch OF elevator_vhd_tst IS
 -- signals                                                   
 SIGNAL clk : STD_LOGIC;
 SIGNAL column : STD_LOGIC_VECTOR(3 DOWNTO 0);
+SIGNAL dir : STD_LOGIC;
 SIGNAL disp_nr1 : STD_LOGIC;
+SIGNAL em_stop : STD_LOGIC;
+SIGNAL en : STD_LOGIC;
 SIGNAL led1_out : STD_LOGIC;
+SIGNAL nsleep : STD_LOGIC;
 SIGNAL reset : STD_LOGIC;
 SIGNAL row : STD_LOGIC_VECTOR(3 DOWNTO 0);
 SIGNAL seg_out : STD_LOGIC_VECTOR(6 DOWNTO 0);
+SIGNAL step : STD_LOGIC;
+SIGNAL stop : STD_LOGIC;
 COMPONENT elevator
 	PORT (
 	clk : IN STD_LOGIC;
-	column : OUT STD_LOGIC_VECTOR(3 DOWNTO 0);
-	disp_nr1 : OUT STD_LOGIC;
-	led1_out : OUT STD_LOGIC;
+	column : BUFFER STD_LOGIC_VECTOR(3 DOWNTO 0);
+	dir : BUFFER STD_LOGIC;
+	disp_nr1 : BUFFER STD_LOGIC;
+	em_stop : IN STD_LOGIC;
+	en : INOUT STD_LOGIC;
+	led1_out : BUFFER STD_LOGIC;
+	nsleep : BUFFER STD_LOGIC;
 	reset : IN STD_LOGIC;
 	row : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-	seg_out : OUT STD_LOGIC_VECTOR(6 DOWNTO 0)
+	seg_out : BUFFER STD_LOGIC_VECTOR(6 DOWNTO 0);
+	step : BUFFER STD_LOGIC;
+	stop : IN STD_LOGIC
 	);
 END COMPONENT;
 BEGIN
@@ -56,18 +68,24 @@ BEGIN
 -- list connections between master ports and signals
 	clk => clk,
 	column => column,
+	dir => dir,
 	disp_nr1 => disp_nr1,
+	em_stop => em_stop,
+	en => en,
 	led1_out => led1_out,
+	nsleep => nsleep,
 	reset => reset,
 	row => row,
-	seg_out => seg_out
+	seg_out => seg_out,
+	step => step,
+	stop => stop
 	);
 init : PROCESS                                               
 -- variable declarations                                     
 BEGIN                                                        
         -- code that executes only once                      
 WAIT;                                                       
-END PROCESS init; 
+END PROCESS init;  
 
 clk_process : process
 begin
@@ -83,13 +101,20 @@ always : PROCESS
 -- variable declarations                                      
 BEGIN                                                         
         -- code executes for every event on sensitivity list  
+	wait for 100 ns;
 	row <= "1111"; 
 	reset <= '1'; 
 	wait for 50 ns;
 	reset <= '0';
 	wait for 50 ns;
 	reset <= '1'; 
+
 	
+	wait for 10 ms;
+	stop <= '1';
+	wait for 50 ns;
+	stop <= '0';
+
 	
 	wait until column = "1011";  -- 2
 	row <= "0111";              
@@ -99,9 +124,14 @@ BEGIN
 	wait until column = "0111";  -- *
 	row <= "1110";              
 	wait for 5 ms;
-	row <= "1111";              
-
+	row <= "1111"; 
 	
-WAIT;                                                        
-END PROCESS always;                                          
+	wait for 10 ms;
+	em_stop <= '0';
+	wait for 50 ns;
+	em_stop <= '1'; 
+	
+END PROCESS always;  
+
+	                                      
 END elevator_arch;
