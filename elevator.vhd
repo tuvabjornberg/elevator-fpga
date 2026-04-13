@@ -18,7 +18,7 @@ entity elevator is
 		
 		step : out std_logic; -- rising edge causes the indexer to advance 
 		dir : out std_logic; -- direction of stepping 
-		en : inout std_logic; -- Logic low to disable device outputs; logic high to enable. Also used for fault indication. Pulled logic low in fault condition.
+		en : out std_logic; -- Logic low to disable device outputs; logic high to enable. Also used for fault indication. Pulled logic low in fault condition. input/output in documentation
 		nsleep : out std_logic; -- sleep mode input
 		stop : in std_logic;
 		
@@ -46,10 +46,15 @@ signal CURRENT_STATE_LIFT : STATE_TYPE_LIFT;
 signal NEXT_STATE_LIFT : STATE_TYPE_LIFT;
 
 signal count_keypad: integer := 1; -- 1kHz clock
-signal count_lift: integer := 1; -- 2000 stpes/s
+signal count_lift: integer := 1; 
 
 signal stepper_en : std_logic := '0'; -- toggles between 1 and 0 for the stepper motor
 signal calibrated : std_logic := '0'; 
+
+constant max_speed : integer := 12500; -- 50MHz/2000(steps/s) = 25000 cycles per step => toggle every 12500, T = 1/f...
+constant cal_speed : integer := 100000; -- 250 steps/s
+constant min_speed : integer := 25000000; -- 1 step/s 
+variable currrent_delay : integer := 0; 
 
 begin
 
@@ -67,6 +72,7 @@ begin
 				
 				CURRENT_STATE_KEYPAD <= idle;
 				CURRENT_STATE_LIFT <= calibrate;
+				NEXT_STATE_LIFT <= calibrate;
 				
 				row_index <= "11";
 				col_index <= "01";
@@ -77,55 +83,75 @@ begin
 			elsif rising_edge(clk) then	
 				CURRENT_STATE_LIFT <= NEXT_STATE_LIFT;
 				
+				--if em_stop = '0' then
+				--	NEXT_STATE_LIFT <= stopped; 
+				--	--step <= '0';
+				--	--dir <= '0';
+				--	--en <= '0';
+				--	--nsleep <= '0';
+				--	--CURRENT_STATE_LIFT <= stopped; 
+				--	--stepper_en <= '0';
+				--end if;
+				
 				if em_stop = '0' then
-					NEXT_STATE_LIFT <= stopped; 
-					--step <= '0';
-					--dir <= '0';
-					--en <= '0';
-					--nsleep <= '0';
-					--CURRENT_STATE_LIFT <= stopped; 
-					--stepper_en <= '0';
+					step <= '0';
+					dir <= '0';
+					en <= '0';
+					nsleep <= '0';
 				end if;
 					
 				case CURRENT_STATE_LIFT is
 						when idle =>
-							--step <= '0';
-							--dir <= '0';
-							--en <= '0';
-							--nsleep <= '0';
+							step <= '0';
+							dir <= '0';
+							en <= '0';
+							nsleep <= '0';
+					
 							NEXT_STATE_LIFT <= idle;
+							
+							--if em_stop = '0' then
+							--		NEXT_STATE_LIFT <= stopped;
+							--else
+							--		NEXT_STATE_LIFT <= idle;
+							--end if;
+		  
 						when calibrate =>
 							dir <= '1';
 							en <= '1';
 							nsleep <= '1';
-
-							if stop = '1' then
+							
+							if em_stop = '0' then
+								--NEXT_STATE_LIFT <= stopped;
+								NEXT_STATE_LIFT <= idle;
+								
+							elsif stop = '1' then
 								calibrated <= '1';
-								NEXT_STATE_LIFT <= stopped;
+								--NEXT_STATE_LIFT <= stopped;
+								NEXT_STATE_LIFT <= idle;
+								
 							else
 								NEXT_STATE_LIFT <= calibrate;
 							end if;
 							
-							--if count_lift = 12500 then -- 50MHz/2000 = 25000 cycles per step => toggle every 12500
-							--	count_lift <= 1; 
-							--	if stepper_en = '1' then 
-							--		en <= '0';
-							--		nsleep <= '0';
-							--	else 
-							--		step <= '1'; -- now high for and entire cycle, motor technically only needs a pulse (dirac), possible to have step=1 high for 1 clk and step=0 for 12500 clk?
-							--		stepper_en <= '1';
-							--	end if;
-							--else 
-							--	count_lift <= count_lift + 1; 
-							--end if;
-							
-							if count_lift = 12500 then
-								step <= '1';
-								count_lift <= 0;
-							else
-								step <= '0';
-								count_lift <= count_lift + 1;
+							-- OBS MAX SPEED
+							if count_lift = cal_speed then 
+								count_lift <= 1; 
+								if stepper_en = '1' then 
+									step <= '1';
+									en <= '1';
+									nsleep <= '1';
+									stepper_en <= '0';
+								else 
+									step <= '0'; -- now high for and entire cycle, motor technically only needs a pulse (dirac), possible to have step=1 high for 1 clk and step=0 for 12500 clk?
+									--en <= '0'; -- "Make sure the EN and nSLEEP are ON only while moving the motor, otherwise the motor gets hot." ???
+									--nsleep <= '0';
+									stepper_en <= '1';
+								end if;
+							else 
+								count_lift <= count_lift + 1; 
 							end if;
+							
+							-- WORK ON: Acceleration
 								
 						when move_up =>
 						when move_down =>
@@ -194,7 +220,7 @@ begin
 						enter <= '1';
 						led1_out <= '1';
 						confirmed_floor <= previous_key; 
-						NEXT_STATE_LIFT <= move_up; --!!!!!!!!!!!!!!!!
+						--NEXT_STATE_LIFT <= move_up; --!!!!!!!!!!!!!!!!
 					else
 						enter <= '0';
 						led1_out <= '0'; 

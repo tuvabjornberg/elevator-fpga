@@ -101,34 +101,36 @@ always : PROCESS
 -- variable declarations                                      
 BEGIN                                                         
         -- code executes for every event on sensitivity list  
-	wait for 100 ns;
-	row <= "1111"; 
-	reset <= '1'; 
-	wait for 50 ns;
-	reset <= '0';
-	wait for 50 ns;
-	reset <= '1'; 
-
+	row <= "1111";
+	stop <= '0';
+	em_stop <= '1';
+	reset <= '1';
 	
-	wait for 10 ms;
+	wait for 20 ms;
+	reset <= '0';
+	wait for 20 ns;
+	reset <= '1';
+
+	wait for 400 ms;
 	stop <= '1';
-	wait for 50 ns;
+	wait for 400 ms;
 	stop <= '0';
 
 	
 	wait until column = "1011";  -- 2
 	row <= "0111";              
-	wait for 5 ms;
-	row <= "1111";              
+	wait for 100 ms;
+	row <= "1111";     
+	
 	
 	wait until column = "0111";  -- *
 	row <= "1110";              
-	wait for 5 ms;
+	wait for 100 ms;
 	row <= "1111"; 
 	
-	wait for 10 ms;
+	--wait for 10 ms;
 	em_stop <= '0';
-	wait for 50 ns;
+	wait for 150 ms;
 	em_stop <= '1'; 
 	
 END PROCESS always;  
