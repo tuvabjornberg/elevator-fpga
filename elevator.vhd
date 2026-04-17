@@ -41,7 +41,7 @@ type STATE_TYPE_KEYPAD is (idle, col0, col1, col2, col3);
 signal CURRENT_STATE_KEYPAD : STATE_TYPE_KEYPAD;
 signal NEXT_STATE_KEYPAD : STATE_TYPE_KEYPAD;
 
-type STATE_TYPE_LIFT is (idle, calibrate, move_up, move_down, stopped);
+type STATE_TYPE_LIFT is (idle, calibrate, move_up, move_down);
 signal CURRENT_STATE_LIFT : STATE_TYPE_LIFT;
 signal NEXT_STATE_LIFT : STATE_TYPE_LIFT;
 
@@ -52,13 +52,15 @@ signal stepper_en : std_logic := '0'; -- toggles between 1 and 0 for the stepper
 signal calibrated : std_logic := '0'; 
 
 constant max_speed : integer := 12500; -- 50MHz/2000(steps/s) = 25000 cycles per step => toggle every 12500, T = 1/f...
-constant cal_speed : integer := 100000; -- 250 steps/s
+constant cal_speed : integer := 250000; -- 100 steps/s, arbiträrt typ
 constant min_speed : integer := 25000000; -- 1 step/s 
-variable currrent_delay : integer := 0; 
 
 begin
 
 	process(clk, reset)
+	
+	variable currrent_delay : integer := 0; 
+
 		begin
 			if reset = '0' then
 				current_key <= "1101"; 
@@ -83,16 +85,6 @@ begin
 			elsif rising_edge(clk) then	
 				CURRENT_STATE_LIFT <= NEXT_STATE_LIFT;
 				
-				--if em_stop = '0' then
-				--	NEXT_STATE_LIFT <= stopped; 
-				--	--step <= '0';
-				--	--dir <= '0';
-				--	--en <= '0';
-				--	--nsleep <= '0';
-				--	--CURRENT_STATE_LIFT <= stopped; 
-				--	--stepper_en <= '0';
-				--end if;
-				
 				if em_stop = '0' then
 					step <= '0';
 					dir <= '0';
@@ -109,11 +101,6 @@ begin
 					
 							NEXT_STATE_LIFT <= idle;
 							
-							--if em_stop = '0' then
-							--		NEXT_STATE_LIFT <= stopped;
-							--else
-							--		NEXT_STATE_LIFT <= idle;
-							--end if;
 		  
 						when calibrate =>
 							dir <= '1';
@@ -121,19 +108,17 @@ begin
 							nsleep <= '1';
 							
 							if em_stop = '0' then
-								--NEXT_STATE_LIFT <= stopped;
 								NEXT_STATE_LIFT <= idle;
 								
 							elsif stop = '1' then
 								calibrated <= '1';
-								--NEXT_STATE_LIFT <= stopped;
 								NEXT_STATE_LIFT <= idle;
 								
 							else
 								NEXT_STATE_LIFT <= calibrate;
 							end if;
 							
-							-- OBS MAX SPEED
+							-- OBS constant speed
 							if count_lift = cal_speed then 
 								count_lift <= 1; 
 								if stepper_en = '1' then 
@@ -155,13 +140,6 @@ begin
 								
 						when move_up =>
 						when move_down =>
-						when stopped =>
-							step <= '0';
-							dir <= '0';
-							en <= '0';
-							nsleep <= '0';
-							stepper_en <= '0';
-							NEXT_STATE_LIFT <= idle;
 						when others =>
 							step <= '0';
 							dir <= '0';
@@ -170,6 +148,11 @@ begin
 							stepper_en <= '0';
 							NEXT_STATE_LIFT <= idle;
 					end case;				 	
+				
+				
+				
+				
+				
 				
 				
 				count_keypad <= count_keypad + 1; 
