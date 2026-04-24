@@ -64,6 +64,14 @@ COMPONENT elevator
 END COMPONENT;
 BEGIN
 	i1 : elevator
+	
+	GENERIC MAP (
+    g_max_speed  => 300,
+    g_cal_speed  => 2500,
+    g_min_speed  => 5000,
+    g_keypad_div => 250
+	)
+
 	PORT MAP (
 -- list connections between master ports and signals
 	clk => clk,
@@ -106,34 +114,79 @@ BEGIN
 	em_stop <= '1';
 	reset <= '1';
 	
-	wait for 20 ms;
+	wait for 1 ms;
 	reset <= '0';
-	wait for 20 ns;
+	wait for 5 ms;
 	reset <= '1';
 
-	wait for 400 ms;
+	wait for 500 ms;
 	stop <= '1';
-	wait for 400 ms;
+	wait for 1 ms;
 	stop <= '0';
 
-	
-	wait until column = "1011";  -- 2
-	row <= "0111";              
-	wait for 100 ms;
+	wait for 5 ms;
+	wait until column = "1011";  -- 3
+	row <= "1110";              
+	wait for 5 ms;
 	row <= "1111";     
 	
-	
-	wait until column = "0111";  -- *
-	row <= "1110";              
-	wait for 100 ms;
+	wait for 5 ms;
+	wait until column = "1110";  -- *
+	row <= "0111";              
+	wait for 5 ms;
 	row <= "1111"; 
 	
-	--wait for 10 ms;
-	em_stop <= '0';
-	wait for 150 ms;
-	em_stop <= '1'; 
+	wait for 30000 ms;
+	
+
+
+	
+
 	
 END PROCESS always;  
 
+
+--always : PROCESS
+--BEGIN
+--    -- init
+--    row <= "1111";
+--    stop <= '0';
+--    em_stop <= '1';
+--    reset <= '0';
+--
+--    -- reset pulse (active low assumed)
+--    wait for 1 us;
+--    reset <= '1';
+--
+--    -- loop test multiple times
+--    --for i in 0 to 2 loop
+--
+--        -- simulate stop button
+--        wait for 10 us;
+--        stop <= '1';
+--        wait for 10 us;
+--        stop <= '0';
+--
+--        -- press "3"
+--        wait until column = "1011";
+--        row <= "1110";
+--        wait for 5 us;
+--        row <= "1111";
+--
+--        -- press "*"
+--        wait until column = "1110";
+--        row <= "0111";
+--        wait for 5 us;
+--        row <= "1111";
+--
+--        -- let system run
+--        wait for 50 us;  
+--	
+--
+--    --end loop;
+--
+--    wait;
+--END PROCESS;
+--
 	                                      
 END elevator_arch;
