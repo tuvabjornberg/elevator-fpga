@@ -9,8 +9,8 @@ use work.keypad.all;
 entity elevator is
 
 	generic ( -- for faster simulation, is overrided in TB
-        g_max_speed   : integer := 30000;
-        g_cal_speed   : integer := 250000;
+        g_max_speed   : integer := 40000; -- actual maxspeed for motor capacity is 12500
+        g_cal_speed   : integer := 400000; --250000;
         g_min_speed   : integer := 500000;
         g_keypad_div  : integer := 25000
     );
@@ -49,13 +49,12 @@ signal current_floor : std_logic_vector(3 downto 0) := "1101";
 signal current_position : integer range 0 to 6000 := 0; 
 signal target_position : integer range 0 to 6000 := 0; 
 signal start_position : integer range 0 to 6000 := 0; 
-signal midpoint : integer range 0 to 3000 := 0; -- larges midpoint is between 0-6000 = 3000
 
 type STATE_TYPE_KEYPAD is (idle, col0, col1, col2, col3);
 signal CURRENT_STATE_KEYPAD : STATE_TYPE_KEYPAD;
 signal NEXT_STATE_KEYPAD : STATE_TYPE_KEYPAD;
 
-type STATE_TYPE_LIFT is (idle, calibrate, move_up, move_down, stopped);
+type STATE_TYPE_LIFT is (idle, calibrate, move, stopped); --move_up, move_down,
 signal CURRENT_STATE_LIFT : STATE_TYPE_LIFT;
 signal NEXT_STATE_LIFT : STATE_TYPE_LIFT;
 
@@ -73,8 +72,11 @@ signal calibrated : std_logic := '0';
 constant max_speed : integer := g_max_speed;
 constant cal_speed : integer := g_cal_speed;
 constant min_speed : integer := g_min_speed;
+constant keypad_div : integer := g_keypad_div; 
 
-signal current_delay : integer range 5000 to 525000 := g_min_speed; --min_speed-accelspeedcount = 30000-25000=5000, same with max_speed
+signal current_delay : integer range 28000 to 502000 := g_min_speed; --min_speed-accelspeedcount = 30000-25000=5000, same with max_speed
+
+signal dir_tmp : std_logic := '0'; 
 
 begin
 
@@ -105,6 +107,15 @@ begin
 				
 				count_calibrate <= 1; 
 				count_updown <= 1; 
+				
+				dir_tmp <= '0'; 
+				
+				--step <= '0';
+				--dir <= '0';
+				--en <= '0';
+				--nsleep <= '0';
+				stepper_en <= '0';
+				calibrated <= '0';
 							
 	
 			elsif rising_edge(clk) then	
@@ -127,9 +138,11 @@ begin
 							
 							
 							if current_position < target_position and calibrated = '1' then
-								NEXT_STATE_LIFT <= move_up;
+								NEXT_STATE_LIFT <= move; --move up
+								dir_tmp <= '1';
 							elsif current_position > target_position  and calibrated = '1' then
-								NEXT_STATE_LIFT <= move_down;
+								NEXT_STATE_LIFT <= move; --move down 
+								dir_tmp <= '0';
 							else
 								NEXT_STATE_LIFT <= idle;
 							end if;
@@ -141,11 +154,11 @@ begin
 							en <= '1';
 							nsleep <= '1';
 							
-							if em_stop = '0' then -- needs some action, either remember to recalibrate, or do it automatically
-								calibrated <= '0';
-								NEXT_STATE_LIFT <= idle;
+							--if em_stop = '0' then -- needs some action, either remember to recalibrate, or do it automatically
+							--	calibrated <= '0';
+							--	NEXT_STATE_LIFT <= idle;
 								
-							elsif stop = '1' then
+							if stop = '0' then
 								calibrated <= '1';
 								current_position <= 0; 
 								start_position <= 0; 
@@ -177,8 +190,8 @@ begin
 							
 							
 								
-						when move_up =>
-							dir <= '1';
+						when move => --move_up
+							dir <= dir_tmp;
 							en <= '1';
 							nsleep <= '1';
 						
@@ -191,26 +204,49 @@ begin
 								if stepper_en = '1' then 
 									step <= '1';
 									stepper_en <= '0';
-									current_position <= current_position + 1; 
 									
-									
-									if current_position < midpoint then
-										if current_delay < max_speed then
-											current_delay <= max_speed; 
-										elsif current_delay > min_speed then
-											current_delay <= min_speed; 
-										else
-											current_delay <= current_delay - 2000; --accel -- 25000= (max-min)/1000, reach max speed in 1000 steps --EVALUATE EFECT
-										end if; 
+									if dir_tmp = '1' then
+										current_position <= current_position + 1; 
 									else 
-										--current_position > midpoint then
-										if current_delay < max_speed then
-											current_delay <= max_speed; 
-										elsif current_delay > min_speed then
-											current_delay <= min_speed; 
-										else
-											current_delay <= current_delay + 2000; --deaccel -- it takes 188 steps to go from max-->min (min-max)/2000=188
-										end if; 
+										current_position <= current_position - 1; 
+									end if; 
+									
+									
+									--if current_position < midpoint then
+									if dir_tmp = '1' then
+										-- curren_position is delayed, EVAULATE
+										if current_position < target_position - 240 then -- 235 steps to go from max --> min
+											if current_delay <= max_speed then
+												current_delay <= max_speed; 
+											--elsif current_delay > min_speed then
+												--current_delay <= min_speed; 
+											else
+												current_delay <= current_delay - 2000; --accel -- 25000= (max-min)/1000, reach max speed in 1000 steps --EVALUATE EFECT
+											end if; 
+										else 
+											--current_position > midpoint then
+											--if current_delay < max_speed then
+											--	current_delay <= max_speed; 
+											if current_delay >= min_speed then
+												current_delay <= min_speed; 
+											else
+												current_delay <= current_delay + 2000; --deaccel -- it takes 235 steps to go from max-->min (min-max)/2000=188
+											end if; 
+										end if;
+									else
+										if current_position > target_position + 240 then -- 235 steps to go from max --> min
+											if current_delay <= max_speed then
+												current_delay <= max_speed; 
+											else
+												current_delay <= current_delay - 2000; 
+											end if; 
+										else  
+											if current_delay >= min_speed then
+												current_delay <= min_speed; 
+											else
+												current_delay <= current_delay + 2000;
+											end if; 
+										end if;
 									end if;
 									
 									--if current_delay < max_speed then
@@ -235,61 +271,62 @@ begin
 							
 							
 							
-						when move_down =>
-							dir <= '0';
-							en <= '1';
-							nsleep <= '1';
-						
-							if current_position = target_position then
-								NEXT_STATE_LIFT <= stopped; 
-							end if; 
-							
-							if count_updown = current_delay then 
-								count_updown <= 1; 
-								if stepper_en = '1' then 
-									step <= '1';
-									stepper_en <= '0';
-									current_position <= current_position + 1; 
-									
-									
-									if current_position < midpoint then
-										if current_delay < max_speed then
-											current_delay <= max_speed; 
-										elsif current_delay > min_speed then
-											current_delay <= min_speed; 
-										else
-											current_delay <= current_delay - 2000; --accel -- 25000= (max-min)/1000, reach max speed in 1000 steps --EVALUATE EFECT
-										end if; 
-									else 
-										--current_position > midpoint then
-										if current_delay < max_speed then
-											current_delay <= max_speed; 
-										elsif current_delay > min_speed then
-											current_delay <= min_speed; 
-										else
-											current_delay <= current_delay + 2000; --deaccel 
-										end if; 
-									end if;
-									
-									--if current_delay <= max_speed then
-									--	current_delay <= max_speed; 
-									--elsif current_delay > min_speed then
-									--	current_delay <= min_speed; 
-									--else
-									--	if current_position + 1 < midpoint then -- +1 is to avoid delayed, so will use this cycles delay --EVALUATE EFFECT
-									--		current_delay <= current_delay - 15000; --accel -- 25000= (max-min)/1000, reach max speed in 1000 steps --EVALUATE EFECT
-									--	else
-									--		current_delay <= current_delay + 15000; --deaccel
-									--	end if; 
-									--end if; 
-							
-								else 
-									step <= '0'; 
-									stepper_en <= '1';
-								end if;
-							else 
-								count_updown <= count_updown + 1; 
-							end if;
+						--when move_down =>
+						--	dir <= '0';
+						--	en <= '1';
+						--	nsleep <= '1';
+						--
+						--	if current_position = target_position then
+						--		NEXT_STATE_LIFT <= stopped; 
+						--	end if; 
+						--	
+						--	if count_updown = current_delay then 
+						--		count_updown <= 1; 
+						--		if stepper_en = '1' then 
+						--			step <= '1';
+						--			stepper_en <= '0';
+						--			current_position <= current_position + 1; 
+						--			
+						--			
+						--			--if current_position < midpoint then
+						--			if current_position < target_position - 200 then -- 188 steps to go from max --> min
+						--				if current_delay < max_speed then
+						--					current_delay <= max_speed; 
+						--				--elsif current_delay > min_speed then
+						--					--current_delay <= min_speed; 
+						--				else
+						--					current_delay <= current_delay - 2000; --accel -- 25000= (max-min)/1000, reach max speed in 1000 steps --EVALUATE EFECT
+						--				end if; 
+						--			else 
+						--				--current_position > midpoint then
+						--				--if current_delay < max_speed then
+						--				--	current_delay <= max_speed; 
+						--				if current_delay > min_speed then
+						--					current_delay <= min_speed; 
+						--				else
+						--					current_delay <= current_delay + 2000; --deaccel -- it takes 188 steps to go from max-->min (min-max)/2000=188
+						--				end if; 
+						--			end if;
+						--			
+						--			--if current_delay <= max_speed then
+						--			--	current_delay <= max_speed; 
+						--			--elsif current_delay > min_speed then
+						--			--	current_delay <= min_speed; 
+						--			--else
+						--			--	if current_position + 1 < midpoint then -- +1 is to avoid delayed, so will use this cycles delay --EVALUATE EFFECT
+						--			--		current_delay <= current_delay - 15000; --accel -- 25000= (max-min)/1000, reach max speed in 1000 steps --EVALUATE EFECT
+						--			--	else
+						--			--		current_delay <= current_delay + 15000; --deaccel
+						--			--	end if; 
+						--			--end if; 
+						--	
+						--		else 
+						--			step <= '0'; 
+						--			stepper_en <= '1';
+						--		end if;
+						--	else 
+						--		count_updown <= count_updown + 1; 
+						--	end if;
 						
 						
 						
@@ -312,9 +349,9 @@ begin
 				
 				
 				
-				count_keypad <= count_keypad + 1; 
+				count_keypad <= count_keypad + 1; 	
 				
-				if count_keypad = g_keypad_div then -- 50MHz --> 1kHz (clk divider)
+				if count_keypad = keypad_div then -- 50MHz --> 1kHz (clk divider)
 					count_keypad <= 1; 
 					CURRENT_STATE_KEYPAD <= NEXT_STATE_KEYPAD;
 					
@@ -365,7 +402,7 @@ begin
 						
 						target_position <= key_to_step(previous_key);
 						start_position <= current_position; 
-						midpoint <= (key_to_step(previous_key) + current_position) / 2; --/2 will count as a right bit shift of 1 (>>1) (using current do avoid delay when also setting start in teh same cycle), -- is delayed if target_position instead of key_to_step, but 2 func calls. 
+						--midpoint <= (key_to_step(previous_key) + current_position) / 2; --/2 will count as a right bit shift of 1 (>>1) (using current do avoid delay when also setting start in teh same cycle), -- is delayed if target_position instead of key_to_step, but 2 func calls. 
 						
 					else
 						enter <= '0';

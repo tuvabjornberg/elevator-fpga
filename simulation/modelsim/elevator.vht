@@ -66,10 +66,10 @@ BEGIN
 	i1 : elevator
 	
 	GENERIC MAP (
-    g_max_speed  => 300,
-    g_cal_speed  => 2500,
-    g_min_speed  => 5000,
-    g_keypad_div => 250
+    g_max_speed  => 30000,
+    g_cal_speed  => 250000,
+    g_min_speed  => 500000,
+    g_keypad_div => 25000
 	)
 
 	PORT MAP (
@@ -136,11 +136,23 @@ BEGIN
 	wait for 5 ms;
 	row <= "1111"; 
 	
-	wait for 30000 ms;
+	wait for 42000 ms;
 	
-
-
 	
+	wait for 5 ms;
+	wait until column = "1101";  -- 2
+	row <= "1110";              
+	wait for 5 ms;
+	row <= "1111";     
+	
+	wait for 5 ms;
+	wait until column = "1110";  -- *
+	row <= "0111";              
+	wait for 5 ms;
+	row <= "1111"; 
+
+	wait for 40000 ms;
+
 
 	
 END PROCESS always;  
