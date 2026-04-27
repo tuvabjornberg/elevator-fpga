@@ -37,20 +37,13 @@ entity elevator is
 end entity;
 
 architecture rtl of elevator is	
-signal row_index : std_logic_vector(1 downto 0) := "11"; 
 signal col_index : std_logic_vector(1 downto 0) := "01"; 
 signal previous_key : std_logic_vector (3 downto 0) := "1101";
 signal current_key : std_logic_vector(3 downto 0) := "1101"; -- 1101 = index 13 = "0" on keypad
 signal prev_row : std_logic_vector(3 downto 0) := "1111"; -- for no-bouncing guarantee
 
-signal enter : std_logic := '0'; 
-signal confirmed_floor : std_logic_vector(3 downto 0) := "1101";
-signal current_floor : std_logic_vector(3 downto 0) := "1101"; 
-
 signal current_position : integer range 0 to 6000 := 0; 
 signal target_position : integer range 0 to 6000 := 0; 
-signal start_position : integer range 0 to 6000 := 0; 
---signal midpoint : integer range 0 to 3000 := 0; -- larges midpoint is between 0-6000 = 3000
 
 type STATE_TYPE_KEYPAD is (idle, col0, col1, col2, col3);
 signal CURRENT_STATE_KEYPAD : STATE_TYPE_KEYPAD;
@@ -89,16 +82,13 @@ begin
 				seg_out <= to_ReverseSevenSegment("1101"); -- 0
 				disp_nr1 <= '1';
 				
-				enter <= '0'; 
 				led1_out <= '0'; 
-				confirmed_floor <= "1101"; 
 				target_position <= 0; 
 				
 				CURRENT_STATE_KEYPAD <= idle;
 				CURRENT_STATE_LIFT <= calibrate;
 				NEXT_STATE_LIFT <= calibrate;
 				
-				row_index <= "11";
 				col_index <= "01";
 				
 				count_keypad <= 1;
@@ -154,7 +144,6 @@ begin
 							if stop = '0' then
 								calibrated <= '1';
 								current_position <= 0; 
-								start_position <= 0; 
 								
 								NEXT_STATE_LIFT <= stopped;
 								
@@ -244,7 +233,6 @@ begin
 							
 
 						when stopped =>
-							current_floor <= confirmed_floor; 
 							NEXT_STATE_LIFT <= idle;
 							
 						when others =>
@@ -303,18 +291,12 @@ begin
 					
 					-- * pressed (enter)
 					if current_key = "1100" then
-						enter <= '1';
 						led1_out <= '1';
-						--confirmed_floor <= previous_key; 
 						current_key <= previous_key; 
-						
-						
+					
 						target_position <= key_to_step(previous_key);
-						start_position <= current_position; 
-						--midpoint <= (key_to_step(previous_key) + current_position) / 2; --/2 will count as a right bit shift of 1 (>>1) (using current do avoid delay when also setting start in teh same cycle), -- is delayed if target_position instead of key_to_step, but 2 func calls. 
 						
 					else
-						enter <= '0';
 						led1_out <= '0'; 
 					end if; 
 				
@@ -325,5 +307,4 @@ begin
 	 
 
 end rtl;
-
 
