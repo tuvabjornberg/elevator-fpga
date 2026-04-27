@@ -22,7 +22,7 @@ entity elevator is
 		row : in std_logic_vector(3 downto 0); 
 		column : out std_logic_vector(3 downto 0);
 		seg_out : out std_logic_vector(6 downto 0);
-		disp_nr1 : out std_logic;
+		disp_nr : out std_logic_vector(3 downto 0);
 		led1_out : out std_logic;
 		
 		step : out std_logic; -- rising edge causes the indexer to advance 
@@ -31,7 +31,9 @@ entity elevator is
 		nsleep : out std_logic; -- sleep mode input
 		stop : in std_logic;
 		
-		em_stop : in std_logic
+		em_stop : in std_logic;
+		
+		sw_level_steps : in std_logic -- 0 = level, 1 = steps, on keypad
 	);
 
 end entity;
@@ -80,7 +82,12 @@ begin
 				current_key <= "1101"; 
 				previous_key <= "1101"; 
 				seg_out <= to_ReverseSevenSegment("1101"); -- 0
-				disp_nr1 <= '1';
+				
+				if sw_level_steps = '0' then
+					disp_nr <= "0001";
+				else
+					disp_nr <= "1111"; 
+				end if; 
 				
 				led1_out <= '0'; 
 				target_position <= 0; 
@@ -283,9 +290,15 @@ begin
 					if row /= "1111" and prev_row = "1111" then
 						previous_key <= current_key; 
 						current_key <= map_key(decode_row(row), col_index);
-						disp_nr1 <= '1';
+						
 					end if; 
 					prev_row <= row;
+					
+					if sw_level_steps = '0' then
+						disp_nr <= "0001";
+					else
+						disp_nr <= "1111"; 
+					end if; 
 						
 					seg_out <= to_ReverseSevenSegment(current_key);
 					
