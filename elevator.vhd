@@ -44,6 +44,8 @@ signal previous_key : std_logic_vector (3 downto 0) := "1101";
 signal current_key : std_logic_vector(3 downto 0) := "1101"; -- 1101 = index 13 = "0" on keypad
 signal prev_row : std_logic_vector(3 downto 0) := "1111"; -- for no-bouncing guarantee
 
+signal confirmed_key : std_logic_vector(3 downto 0) := "1101"; 
+
 signal current_position : integer range 0 to 6000 := 0; 
 signal target_position : integer range 0 to 6000 := 0; 
 
@@ -196,7 +198,26 @@ begin
 										current_position <= current_position + 2; 
 									else 
 										current_position <= current_position - 2; 
-									end if; 
+									end if;  
+									
+									
+									if current_position < 1000 then
+										seg_out <= to_ReverseSevenSegment("1101");
+									elsif current_position < 2000 then
+										seg_out <= to_ReverseSevenSegment("0000");
+									elsif current_position < 3000 then
+										seg_out <= to_ReverseSevenSegment("0001");
+									elsif current_position < 4000 then
+										seg_out <= to_ReverseSevenSegment("0010");
+									elsif current_position < 5000 then
+										seg_out <= to_ReverseSevenSegment("0100");
+									elsif current_position < 6000 then
+										seg_out <= to_ReverseSevenSegment("0101");
+									elsif current_position = 6000 then
+										seg_out <= to_ReverseSevenSegment("0110");
+									else
+										
+									end if;
 									
 									
 									if dir_tmp = '1' then
@@ -299,8 +320,10 @@ begin
 					else
 						disp_nr <= "1111"; 
 					end if; 
-						
-					seg_out <= to_ReverseSevenSegment(current_key);
+					
+					if CURRENT_STATE_LIFT /= move then 
+						seg_out <= to_ReverseSevenSegment(current_key);
+					end if; 
 					
 					-- * pressed (enter)
 					if current_key = "1100" then
@@ -308,6 +331,8 @@ begin
 						current_key <= previous_key; 
 					
 						target_position <= key_to_step(previous_key);
+						
+						confirmed_key <= previous_key; 
 						
 					else
 						led1_out <= '0'; 
