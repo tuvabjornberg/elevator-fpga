@@ -76,14 +76,14 @@ signal dir_tmp : std_logic := '0';
 signal count_display : integer range 0 to 3 := 0;
 signal disp_keys : std_logic_vector(15 downto 0) := "1101110111011101"; --0000, for 4 7-seg displays
 
+signal current_position_split : std_logic_vector(15 downto 0) := "1101110111011101";
+
 signal enter : std_logic := '0'; -- only for debug
 
 begin
 
 	process(clk, reset)
-	
-	variable new_key : std_logic_vector(3 downto 0);
-	
+		
 		begin
 						
 			if reset = '0' then
@@ -95,7 +95,7 @@ begin
 					disp_nr <= "0001";
 				else
 					disp_nr <= "1111"; 
-					--disp_keys <= "1101110111011101"; 
+					disp_keys <= "1101110111011101"; 
 				end if; 
 				
 				led1_out <= '0'; 
@@ -205,53 +205,12 @@ begin
 									stepper_en <= '0';
 									
 									if dir_tmp = '1' then --up
-										current_position <= current_position + 2; 
+										current_position <= current_position + 1; 
 									else --down
-										current_position <= current_position - 2; 
+										current_position <= current_position - 1; 
 									end if;  
 									
 									
-									if sw_level_steps = '0' then
-										disp_nr <= "0001";
-										if current_position < 1000 then -- make to_ReverseSevenSegment_int so to_ReverseSevenSegment(1); gives same as "0000"
-											seg_out <= to_ReverseSevenSegment("1101");
-										elsif current_position < 2000 then
-											seg_out <= to_ReverseSevenSegment("0000");
-										elsif current_position < 3000 then
-											seg_out <= to_ReverseSevenSegment("0001");
-										elsif current_position < 4000 then
-											seg_out <= to_ReverseSevenSegment("0010");
-										elsif current_position < 5000 then
-											seg_out <= to_ReverseSevenSegment("0100");
-										elsif current_position < 6000 then
-											seg_out <= to_ReverseSevenSegment("0101");
-										elsif current_position = 6000 then
-											seg_out <= to_ReverseSevenSegment("0110");
-										else
-											
-										end if;
-									else 
-										case count_display is
-											when 0 =>
-													disp_nr <= "1000";
-													seg_out <= to_ReverseSevenSegment(disp_keys(3 downto 0));
-									
-											when 1 =>
-													disp_nr <= "0100";
-													seg_out <= to_ReverseSevenSegment(disp_keys(7 downto 4));
-									
-											when 2 =>
-													disp_nr <= "0010";
-													seg_out <= to_ReverseSevenSegment(disp_keys(11 downto 8));
-									
-											when 3 =>
-													disp_nr <= "0001";
-													seg_out <= to_ReverseSevenSegment(disp_keys(15 downto 12));
-									
-											when others =>
-				
-										end case;
-									end if;
 									
 									
 									if dir_tmp = '1' then
@@ -293,9 +252,58 @@ begin
 								count_updown <= count_updown + 1; 
 							end if;
 							
+							
+									if sw_level_steps = '0' then
+										disp_nr <= "0001";
+										if current_position * 2 < 1000 then -- make to_ReverseSevenSegment_int so to_ReverseSevenSegment(1); gives same as "0000"
+											seg_out <= to_ReverseSevenSegment("1101"); 
+										elsif current_position * 2  < 2000 then 			-- CAHNGE *2 (refactor), 
+											seg_out <= to_ReverseSevenSegment("0000");
+										elsif current_position * 2  < 3000 then
+											seg_out <= to_ReverseSevenSegment("0001");
+										elsif current_position * 2  < 4000 then
+											seg_out <= to_ReverseSevenSegment("0010");
+										elsif current_position * 2  < 5000 then
+											seg_out <= to_ReverseSevenSegment("0100");
+										elsif current_position * 2  < 6000 then
+											seg_out <= to_ReverseSevenSegment("0101");
+										elsif current_position * 2  = 6000 then
+											seg_out <= to_ReverseSevenSegment("0110");
+										else
+											
+										end if;
+									else 
+										if count_keypad = keypad_div then 
+											current_position_split <= int_to_binary_position(current_position * 2);
+											
+											case count_display is
+												when 0 =>
+														disp_nr <= "1000";
+														seg_out <= SevenSegment_logical(current_position_split(3 downto 0));
+										
+												when 1 =>
+														disp_nr <= "0100";
+														seg_out <= SevenSegment_logical(current_position_split(7 downto 4));
+										
+												when 2 =>
+														disp_nr <= "0010";
+														seg_out <= SevenSegment_logical(current_position_split(11 downto 8));
+										
+												when 3 =>
+														disp_nr <= "0001";
+														seg_out <= SevenSegment_logical(current_position_split(15 downto 12));
+										
+												when others =>
+					
+											end case;
+											
+										end if; 
+									end if;
+							
 
 						when stopped =>
 							NEXT_STATE_LIFT <= idle;
+							
 							
 						when others =>
 							step <= '0';
@@ -304,10 +312,7 @@ begin
 							nsleep <= '0';
 							stepper_en <= '0';
 							NEXT_STATE_LIFT <= idle;
-					end case;		
-	
-
-
+					end case;	
 				
 				
 				count_keypad <= count_keypad + 1; 	
@@ -387,11 +392,12 @@ begin
 						end if; 
 					end if; 
 			
+					
 					if count_display = 3 then
 						count_display <= 0;
 					else
 						count_display <= count_display + 1;
-					end if;					
+					end if;			
 					
 					
 					-- * pressed (enter)
@@ -401,9 +407,9 @@ begin
 						enter <= '1'; 
 						
 						if sw_level_steps = '0' then
-							target_position <= key_to_step_level(previous_key);
+							target_position <= key_to_step_level(previous_key) / 2; -- so step counter can increent by +1 and not +2, odd numbers gets floored
 						else
-							target_position <= key_to_step_steps(disp_keys);
+							target_position <= key_to_step_steps(disp_keys) / 2;
 						end if; 
 						
 					else

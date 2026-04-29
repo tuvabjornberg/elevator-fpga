@@ -19,6 +19,8 @@ package keypad is
 	function decode_key (key : in std_logic_vector(3 downto 0))  
 		return integer;
 
+	function int_to_binary_position (position : in integer) 
+		return std_logic_vector;
 		
 end package keypad;
 
@@ -57,38 +59,16 @@ package body keypad is
 	function key_to_step_level (key : in std_logic_vector(3 downto 0)) return
 		integer is
 		
-		variable step : integer; 
+		variable steps : integer; 
 	
-	begin
-			--case key is 
-			---- 0-6 floors: 0-6000 steps --> 1000 steps between each floor, gives target position
-			--		when "0000" => step := 1000; -- "1"
-			--		when "0001" => step := 2000; -- "2"
-			--		when "0010" => step := 3000; -- "3"
-			--		--when "0011" =>  := ; -- "A"
-			--		
-			--		when "0100" => step := 4000; -- "4"
-			--		when "0101" => step := 5000; -- "5"
-			--		when "0110" => step := 6000; -- "6"
-			--		--when "0111" =>  := ; -- "B"
-	--
-			--		--when "1000" =>  := ; -- "7"
-			--		--when "1001" =>  := ; -- "8"
-			--		--when "1010" =>  := ; -- "9"
-			--		--when "1011" => 	:= ; -- C
-			--		--
-			--		--when "1100" => 	:= ; -- */E
-			--		when "1101" => step := 0; -- 0
-			--		--when "1110" => 	:= ; -- #/F
-			--		--when "1111" => 	:= ; -- D
-			--		
-			--		when others => step := 0;
-			--		
-			--	end case;
+		begin			
+			steps := 1000 * decode_key(key); 
 			
-			step := 1000 * decode_key(key); 
-				
-		return step; 
+			if steps > 6550 then --reality 6000 for even levels
+				return 0; 
+			end if; 
+						
+		return steps; 
 	
 	end function key_to_step_level;
 	
@@ -99,28 +79,25 @@ package body keypad is
 		variable hundreds : integer;
 		variable tens : integer; 
 		variable singles : integer; 
-				
-		--variable step : integer; 
-	
-	begin
-	--disp_keys(15 downto 12) --1000
-	--disp_keys(11 downto 8) --100
-	--disp_keys(7 downto 4) --10
-	--disp_keys(3 downto 0) --1
-	
-		
-	
-	-- change to double dabble
-	thousands := 1000 * decode_key(keys(15 downto 12));
-	hundreds := 100 * decode_key(keys(11 downto 8));
-	tens := 10 * decode_key(keys(7 downto 4));
-	singles := decode_key(keys(3 downto 0));
 
-	return thousands + hundreds + tens + singles; 
+		variable steps : integer; 
+					
+	begin
 	
-				
-		--return step; 
+		-- change to double dabble
+		thousands := 1000 * decode_key(keys(15 downto 12));
+		hundreds := 100 * decode_key(keys(11 downto 8));
+		tens := 10 * decode_key(keys(7 downto 4));
+		singles := decode_key(keys(3 downto 0));
 	
+		steps := thousands + hundreds + tens + singles; 
+		
+		if steps > 6550 then
+			return 0; 
+		end if; 
+		
+		return steps; 
+		
 	end function key_to_step_steps;
 	
 	function decode_key (key : in std_logic_vector(3 downto 0))  return
@@ -158,7 +135,44 @@ package body keypad is
 		
 	end function decode_key;
 
+	
+	function int_to_binary_position(position : in integer) return
+		std_logic_vector is
+		
+			variable position_bin : unsigned(12 downto 0); -- max int/steps = 6550 = 1100110010110 -> 13 digits
+			variable position_bcd : std_logic_vector(15 downto 0) := (others => '0'); -- ddd -> double dabbled
+			variable i : integer;
+			variable scratch : unsigned(28 downto 0) := (others => '0'); -- bcd (16 bits) + bin (13 bits)
+		
+		begin
+			position_bin := to_unsigned(position, 13); 
+			scratch(12 downto 0) := position_bin; 
+			
+			for i in 12 downto 0 loop
+				if scratch(16 downto 13) > 4 then
+					scratch(16 downto 13) := scratch(16 downto 13) + 3;
+				end if;
+				if scratch(20 downto 17) > 4 then
+					scratch(20 downto 17) := scratch(20 downto 17) + 3;
+				end if;
+				if scratch(24 downto 21) > 4 then
+					scratch(24 downto 21) := scratch(24 downto 21) + 3;
+				end if;
+				if scratch(28 downto 25) > 4 then
+					scratch(28 downto 25) := scratch(28 downto 25) + 3;
+				end if;
 
+				scratch(28 downto 1) := scratch(27 downto 0);
+				scratch(0) := '0';
+			end loop; 
+			
+			position_bcd := std_logic_vector(scratch(28 downto 13));
+			
+			return position_bcd; 
+			
+		
+	end function int_to_binary_position; 
+	
 		
 end package body keypad; 
 
