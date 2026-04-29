@@ -44,8 +44,6 @@ signal previous_key : std_logic_vector (3 downto 0) := "1101";
 signal current_key : std_logic_vector(3 downto 0) := "1101"; -- 1101 = index 13 = "0" on keypad
 signal prev_row : std_logic_vector(3 downto 0) := "1111"; -- for no-bouncing guarantee
 
-signal confirmed_key : std_logic_vector(3 downto 0) := "1101"; 
-
 signal current_position : integer range 0 to 6000 := 0; 
 signal target_position : integer range 0 to 6000 := 0; 
 
@@ -75,11 +73,33 @@ signal current_delay : integer range (g_max_speed - g_accel_delay) to (g_min_spe
 
 signal dir_tmp : std_logic := '0'; 
 
+signal disp0 : std_logic_vector(3 downto 0) := "1101";
+signal disp1 : std_logic_vector(3 downto 0) := "1101";
+signal disp2 : std_logic_vector(3 downto 0) := "1101";
+signal disp3 : std_logic_vector(3 downto 0) := "1101";
+
+signal count_display : integer range 0 to 3 := 0;
+signal key_held : std_logic := '0';
+
+signal en_display : std_logic := '0'; 
+
+
+
+--signal disp0_key : std_logic_vector(3 downto 0) := "1101";
+--signal disp1_key : std_logic_vector(3 downto 0) := "1101";
+--signal disp2_key : std_logic_vector(3 downto 0) := "1101";
+--signal disp3_key : std_logic_vector(3 downto 0) := "1101";
+signal disp_key : std_logic_vector(15 downto 0) := "1101110111011101"; --0000, for 4 7-seg displays
+
+
 begin
 
 	process(clk, reset)
 	
+	variable new_key : std_logic_vector(3 downto 0);
+	
 		begin
+						
 			if reset = '0' then
 				current_key <= "1101"; 
 				previous_key <= "1101"; 
@@ -89,6 +109,7 @@ begin
 					disp_nr <= "0001";
 				else
 					disp_nr <= "1111"; 
+					disp_key <= "1101110111011101"; 
 				end if; 
 				
 				led1_out <= '0'; 
@@ -108,8 +129,8 @@ begin
 				dir_tmp <= '0'; 
 				stepper_en <= '0';
 				calibrated <= '0';
-							
-	
+
+				
 			elsif rising_edge(clk) then	
 				CURRENT_STATE_LIFT <= NEXT_STATE_LIFT;
 				
@@ -127,7 +148,10 @@ begin
 							en <= '0';
 							nsleep <= '0';
 					
-							
+							--if stop = '0' then -- if startup happens on level 0
+							--	calibrated <= '1';
+							--	current_position <= 0; 
+							--end if; 
 							
 							if current_position < target_position and calibrated = '1' then
 								NEXT_STATE_LIFT <= move; --move up
@@ -201,22 +225,24 @@ begin
 									end if;  
 									
 									
-									if current_position < 1000 then
-										seg_out <= to_ReverseSevenSegment("1101");
-									elsif current_position < 2000 then
-										seg_out <= to_ReverseSevenSegment("0000");
-									elsif current_position < 3000 then
-										seg_out <= to_ReverseSevenSegment("0001");
-									elsif current_position < 4000 then
-										seg_out <= to_ReverseSevenSegment("0010");
-									elsif current_position < 5000 then
-										seg_out <= to_ReverseSevenSegment("0100");
-									elsif current_position < 6000 then
-										seg_out <= to_ReverseSevenSegment("0101");
-									elsif current_position = 6000 then
-										seg_out <= to_ReverseSevenSegment("0110");
-									else
-										
+									if sw_level_steps = '0' then
+										if current_position < 1000 then -- make to_ReverseSevenSegment_int so to_ReverseSevenSegment(1); gives same as "0000"
+											seg_out <= to_ReverseSevenSegment("1101");
+										elsif current_position < 2000 then
+											seg_out <= to_ReverseSevenSegment("0000");
+										elsif current_position < 3000 then
+											seg_out <= to_ReverseSevenSegment("0001");
+										elsif current_position < 4000 then
+											seg_out <= to_ReverseSevenSegment("0010");
+										elsif current_position < 5000 then
+											seg_out <= to_ReverseSevenSegment("0100");
+										elsif current_position < 6000 then
+											seg_out <= to_ReverseSevenSegment("0101");
+										elsif current_position = 6000 then
+											seg_out <= to_ReverseSevenSegment("0110");
+										else
+											
+										end if;
 									end if;
 									
 									
@@ -270,8 +296,10 @@ begin
 							nsleep <= '0';
 							stepper_en <= '0';
 							NEXT_STATE_LIFT <= idle;
-					end case;				 	
-				
+					end case;		
+	
+
+
 				
 				
 				count_keypad <= count_keypad + 1; 	
@@ -311,19 +339,52 @@ begin
 					if row /= "1111" and prev_row = "1111" then
 						previous_key <= current_key; 
 						current_key <= map_key(decode_row(row), col_index);
-						
-					end if; 
-					prev_row <= row;
 					
-					if sw_level_steps = '0' then
-						disp_nr <= "0001";
-					else
-						disp_nr <= "1111"; 
-					end if; 
+						if current_key /= previous_key then -- problem: cannot press same digit twice
+							disp_key(15 downto 12) <= disp_key(11 downto 8);
+							disp_key(11 downto 8) <= disp_key(7 downto 4);
+							disp_key(7 downto 4) <= disp_key(3 downto 0);
+							disp_key(3 downto 0) <= current_key;
+						end if; 
+					end if;
+			
+					prev_row <= row;					
 					
 					if CURRENT_STATE_LIFT /= move then 
-						seg_out <= to_ReverseSevenSegment(current_key);
+						if sw_level_steps = '0' then
+							disp_nr <= "0001";
+							seg_out <= to_ReverseSevenSegment(current_key);
+					
+						else
+							case count_display is
+								when 0 =>
+										disp_nr <= "1000";
+										seg_out <= to_ReverseSevenSegment(disp_key(3 downto 0));
+						
+								when 1 =>
+										disp_nr <= "0100";
+										seg_out <= to_ReverseSevenSegment(disp_key(7 downto 4));
+						
+								when 2 =>
+										disp_nr <= "0010";
+										seg_out <= to_ReverseSevenSegment(disp_key(11 downto 8));
+						
+								when 3 =>
+										disp_nr <= "0001";
+										seg_out <= to_ReverseSevenSegment(disp_key(15 downto 12));
+						
+								when others =>
+				
+							end case;
+						end if; 
 					end if; 
+			
+					if count_display = 3 then
+						count_display <= 0;
+					else
+						count_display <= count_display + 1;
+					end if;					
+					
 					
 					-- * pressed (enter)
 					if current_key = "1100" then
@@ -331,14 +392,13 @@ begin
 						current_key <= previous_key; 
 					
 						target_position <= key_to_step(previous_key);
-						
-						confirmed_key <= previous_key; 
-						
+												
 					else
 						led1_out <= '0'; 
 					end if; 
 				
 				end if;
+				
 			end if; 
     
     end process;
