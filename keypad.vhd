@@ -10,8 +10,15 @@ package keypad is
 							col_index : in std_logic_vector(1 downto 0)) 
 		return std_logic_vector;
 		
-	function key_to_step (key : in std_logic_vector(3 downto 0)) 
+	function key_to_step_level (key : in std_logic_vector(3 downto 0)) 
 		return integer;
+		
+	function key_to_step_steps (keys : in std_logic_vector(15 downto 0)) 
+		return integer;
+		
+	function decode_key (key : in std_logic_vector(3 downto 0))  
+		return integer;
+
 		
 end package keypad;
 
@@ -47,41 +54,111 @@ package body keypad is
 			return current_key; 
 	end function map_key; 
 	
-	function key_to_step (key : in std_logic_vector(3 downto 0)) return
+	function key_to_step_level (key : in std_logic_vector(3 downto 0)) return
 		integer is
 		
 		variable step : integer; 
 	
 	begin
-		case key is 
-		-- 0-6 floors: 0-6000 steps --> 1000 steps between each floor, gives target position
-				when "0000" => step := 1000; -- "1"
-				when "0001" => step := 2000; -- "2"
-				when "0010" => step := 3000; -- "3"
-				--when "0011" =>  := ; -- "A"
-				
-				when "0100" => step := 4000; -- "4"
-				when "0101" => step := 5000; -- "5"
-				when "0110" => step := 6000; -- "6"
-				--when "0111" =>  := ; -- "B"
-
-				--when "1000" =>  := ; -- "7"
-				--when "1001" =>  := ; -- "8"
-				--when "1010" =>  := ; -- "9"
-				--when "1011" => 	:= ; -- C
-				--
-				--when "1100" => 	:= ; -- */E
-				when "1101" => step := 0; -- 0
-				--when "1110" => 	:= ; -- #/F
-				--when "1111" => 	:= ; -- D
-				
-				when others => step := 0;
-				
-			end case;
+			--case key is 
+			---- 0-6 floors: 0-6000 steps --> 1000 steps between each floor, gives target position
+			--		when "0000" => step := 1000; -- "1"
+			--		when "0001" => step := 2000; -- "2"
+			--		when "0010" => step := 3000; -- "3"
+			--		--when "0011" =>  := ; -- "A"
+			--		
+			--		when "0100" => step := 4000; -- "4"
+			--		when "0101" => step := 5000; -- "5"
+			--		when "0110" => step := 6000; -- "6"
+			--		--when "0111" =>  := ; -- "B"
+	--
+			--		--when "1000" =>  := ; -- "7"
+			--		--when "1001" =>  := ; -- "8"
+			--		--when "1010" =>  := ; -- "9"
+			--		--when "1011" => 	:= ; -- C
+			--		--
+			--		--when "1100" => 	:= ; -- */E
+			--		when "1101" => step := 0; -- 0
+			--		--when "1110" => 	:= ; -- #/F
+			--		--when "1111" => 	:= ; -- D
+			--		
+			--		when others => step := 0;
+			--		
+			--	end case;
 			
-			return step; 
+			step := 1000 * decode_key(key); 
+				
+		return step; 
 	
-	end function key_to_step;
+	end function key_to_step_level;
+	
+	function key_to_step_steps (keys : in std_logic_vector(15 downto 0)) return
+		integer is
+		
+		variable thousands : integer;
+		variable hundreds : integer;
+		variable tens : integer; 
+		variable singles : integer; 
+				
+		--variable step : integer; 
+	
+	begin
+	--disp_keys(15 downto 12) --1000
+	--disp_keys(11 downto 8) --100
+	--disp_keys(7 downto 4) --10
+	--disp_keys(3 downto 0) --1
+	
+		
+	
+	-- change to double dabble
+	thousands := 1000 * decode_key(keys(15 downto 12));
+	hundreds := 100 * decode_key(keys(11 downto 8));
+	tens := 10 * decode_key(keys(7 downto 4));
+	singles := decode_key(keys(3 downto 0));
+
+	return thousands + hundreds + tens + singles; 
+	
+				
+		--return step; 
+	
+	end function key_to_step_steps;
+	
+	function decode_key (key : in std_logic_vector(3 downto 0))  return
+		integer is
+		
+		variable int : integer; 
+		
+		begin
+			case key is 
+					when "0000" => int := 1; -- "1"
+					when "0001" => int := 2; -- "2"
+					when "0010" => int := 3; -- "3"
+					--when "0011" =>  := ; -- "A"
+					
+					when "0100" => int := 4; -- "4"
+					when "0101" => int := 5; -- "5"
+					when "0110" => int := 6; -- "6"
+					--when "0111" =>  := ; -- "B"
+	
+					--when "1000" =>  := ; -- "7"
+					--when "1001" =>  := ; -- "8"
+					--when "1010" =>  := ; -- "9"
+					--when "1011" => 	:= ; -- C
+					--
+					--when "1100" => 	:= ; -- */E
+					when "1101" => int := 0; -- 0
+					--when "1110" => 	:= ; -- #/F
+					--when "1111" => 	:= ; -- D
+					
+					when others => int := 0;
+					
+				end case;
+				
+		return int; 
+		
+	end function decode_key;
+
+
 		
 end package body keypad; 
 

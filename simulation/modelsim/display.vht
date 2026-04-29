@@ -90,7 +90,7 @@ BEGIN
 	stop <= '0';
 	em_stop <= '1';
 	reset <= '1';
-	sw_level_steps <= '1';
+	sw_level_steps <= '0';
 	
 	wait for 1 ms;
 	reset <= '0';
@@ -133,7 +133,7 @@ BEGIN
 	wait for 5 ms;
 	row <= "1111"; 
 	
-	wait for 5 ms;
+	wait for 10 ms;
 
 
 	

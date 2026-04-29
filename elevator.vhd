@@ -73,24 +73,10 @@ signal current_delay : integer range (g_max_speed - g_accel_delay) to (g_min_spe
 
 signal dir_tmp : std_logic := '0'; 
 
-signal disp0 : std_logic_vector(3 downto 0) := "1101";
-signal disp1 : std_logic_vector(3 downto 0) := "1101";
-signal disp2 : std_logic_vector(3 downto 0) := "1101";
-signal disp3 : std_logic_vector(3 downto 0) := "1101";
-
 signal count_display : integer range 0 to 3 := 0;
-signal key_held : std_logic := '0';
+signal disp_keys : std_logic_vector(15 downto 0) := "1101110111011101"; --0000, for 4 7-seg displays
 
-signal en_display : std_logic := '0'; 
-
-
-
---signal disp0_key : std_logic_vector(3 downto 0) := "1101";
---signal disp1_key : std_logic_vector(3 downto 0) := "1101";
---signal disp2_key : std_logic_vector(3 downto 0) := "1101";
---signal disp3_key : std_logic_vector(3 downto 0) := "1101";
-signal disp_key : std_logic_vector(15 downto 0) := "1101110111011101"; --0000, for 4 7-seg displays
-
+signal enter : std_logic := '0'; -- only for debug
 
 begin
 
@@ -109,7 +95,7 @@ begin
 					disp_nr <= "0001";
 				else
 					disp_nr <= "1111"; 
-					disp_key <= "1101110111011101"; 
+					--disp_keys <= "1101110111011101"; 
 				end if; 
 				
 				led1_out <= '0'; 
@@ -208,7 +194,7 @@ begin
 							en <= '1';
 							nsleep <= '1';
 						
-							if current_position = target_position then
+							if (current_position >= target_position and dir_tmp = '1') or (current_position <= target_position and dir_tmp = '0') then -- at right floor (or just missed...)
 								NEXT_STATE_LIFT <= stopped; 
 							end if; 
 							
@@ -218,14 +204,15 @@ begin
 									step <= '1';
 									stepper_en <= '0';
 									
-									if dir_tmp = '1' then
+									if dir_tmp = '1' then --up
 										current_position <= current_position + 2; 
-									else 
+									else --down
 										current_position <= current_position - 2; 
 									end if;  
 									
 									
 									if sw_level_steps = '0' then
+										disp_nr <= "0001";
 										if current_position < 1000 then -- make to_ReverseSevenSegment_int so to_ReverseSevenSegment(1); gives same as "0000"
 											seg_out <= to_ReverseSevenSegment("1101");
 										elsif current_position < 2000 then
@@ -243,6 +230,27 @@ begin
 										else
 											
 										end if;
+									else 
+										case count_display is
+											when 0 =>
+													disp_nr <= "1000";
+													seg_out <= to_ReverseSevenSegment(disp_keys(3 downto 0));
+									
+											when 1 =>
+													disp_nr <= "0100";
+													seg_out <= to_ReverseSevenSegment(disp_keys(7 downto 4));
+									
+											when 2 =>
+													disp_nr <= "0010";
+													seg_out <= to_ReverseSevenSegment(disp_keys(11 downto 8));
+									
+											when 3 =>
+													disp_nr <= "0001";
+													seg_out <= to_ReverseSevenSegment(disp_keys(15 downto 12));
+									
+											when others =>
+				
+										end case;
 									end if;
 									
 									
@@ -341,10 +349,10 @@ begin
 						current_key <= map_key(decode_row(row), col_index);
 					
 						if current_key /= previous_key then -- problem: cannot press same digit twice
-							disp_key(15 downto 12) <= disp_key(11 downto 8);
-							disp_key(11 downto 8) <= disp_key(7 downto 4);
-							disp_key(7 downto 4) <= disp_key(3 downto 0);
-							disp_key(3 downto 0) <= current_key;
+							disp_keys(15 downto 12) <= disp_keys(11 downto 8);
+							disp_keys(11 downto 8) <= disp_keys(7 downto 4);
+							disp_keys(7 downto 4) <= disp_keys(3 downto 0);
+							disp_keys(3 downto 0) <= current_key;
 						end if; 
 					end if;
 			
@@ -359,19 +367,19 @@ begin
 							case count_display is
 								when 0 =>
 										disp_nr <= "1000";
-										seg_out <= to_ReverseSevenSegment(disp_key(3 downto 0));
+										seg_out <= to_ReverseSevenSegment(disp_keys(3 downto 0));
 						
 								when 1 =>
 										disp_nr <= "0100";
-										seg_out <= to_ReverseSevenSegment(disp_key(7 downto 4));
+										seg_out <= to_ReverseSevenSegment(disp_keys(7 downto 4));
 						
 								when 2 =>
 										disp_nr <= "0010";
-										seg_out <= to_ReverseSevenSegment(disp_key(11 downto 8));
+										seg_out <= to_ReverseSevenSegment(disp_keys(11 downto 8));
 						
 								when 3 =>
 										disp_nr <= "0001";
-										seg_out <= to_ReverseSevenSegment(disp_key(15 downto 12));
+										seg_out <= to_ReverseSevenSegment(disp_keys(15 downto 12));
 						
 								when others =>
 				
@@ -390,9 +398,14 @@ begin
 					if current_key = "1100" then
 						led1_out <= '1';
 						current_key <= previous_key; 
-					
-						target_position <= key_to_step(previous_key);
-												
+						enter <= '1'; 
+						
+						if sw_level_steps = '0' then
+							target_position <= key_to_step_level(previous_key);
+						else
+							target_position <= key_to_step_steps(disp_keys);
+						end if; 
+						
 					else
 						led1_out <= '0'; 
 					end if; 
