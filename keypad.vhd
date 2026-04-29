@@ -19,7 +19,7 @@ package keypad is
 	function decode_key (key : in std_logic_vector(3 downto 0))  
 		return integer;
 
-	function int_to_binary_position (position : in integer) 
+	function int13b_to_bcd16b (position : in integer) 
 		return std_logic_vector;
 		
 end package keypad;
@@ -65,7 +65,7 @@ package body keypad is
 			steps := 1000 * decode_key(key); 
 			
 			if steps > 6550 then --reality 6000 for even levels
-				return 0; 
+				return 0; --invalid keypad entry
 			end if; 
 						
 		return steps; 
@@ -93,7 +93,7 @@ package body keypad is
 		steps := thousands + hundreds + tens + singles; 
 		
 		if steps > 6550 then
-			return 0; 
+			return 0; --invalid keypad entry
 		end if; 
 		
 		return steps; 
@@ -136,11 +136,11 @@ package body keypad is
 	end function decode_key;
 
 	
-	function int_to_binary_position(position : in integer) return
+	function int13b_to_bcd16b(position : in integer) return
 		std_logic_vector is
 		
 			variable position_bin : unsigned(12 downto 0); -- max int/steps = 6550 = 1100110010110 -> 13 digits
-			variable position_bcd : std_logic_vector(15 downto 0) := (others => '0'); -- ddd -> double dabbled
+			variable position_bcd : std_logic_vector(15 downto 0) := (others => '0');
 			variable i : integer;
 			variable scratch : unsigned(28 downto 0) := (others => '0'); -- bcd (16 bits) + bin (13 bits)
 		
@@ -171,7 +171,7 @@ package body keypad is
 			return position_bcd; 
 			
 		
-	end function int_to_binary_position; 
+	end function int13b_to_bcd16b; 
 	
 		
 end package body keypad; 

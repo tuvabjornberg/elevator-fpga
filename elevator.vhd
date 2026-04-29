@@ -33,7 +33,7 @@ entity elevator is
 		
 		em_stop : in std_logic;
 		
-		sw_level_steps : in std_logic -- 0 = level, 1 = steps, on keypad
+		sw_level_steps : in std_logic -- 0 = level, 1 = steps, for input on keypad
 	);
 
 end entity;
@@ -44,8 +44,8 @@ signal previous_key : std_logic_vector (3 downto 0) := "1101";
 signal current_key : std_logic_vector(3 downto 0) := "1101"; -- 1101 = index 13 = "0" on keypad
 signal prev_row : std_logic_vector(3 downto 0) := "1111"; -- for no-bouncing guarantee
 
-signal current_position : integer range 0 to 6000 := 0; 
-signal target_position : integer range 0 to 6000 := 0; 
+signal current_position : integer range 0 to 6550 := 0; 
+signal target_position : integer range 0 to 6550 := 0; 
 
 type STATE_TYPE_KEYPAD is (idle, col0, col1, col2, col3);
 signal CURRENT_STATE_KEYPAD : STATE_TYPE_KEYPAD;
@@ -56,13 +56,14 @@ signal CURRENT_STATE_LIFT : STATE_TYPE_LIFT;
 signal NEXT_STATE_LIFT : STATE_TYPE_LIFT;
 
 signal count_keypad : integer := 1; -- 1kHz clock
-signal count_calibrate : integer := 1; 
-signal count_updown : integer := 1;
+signal count_calibrate : integer := 1; -- ensures proper delay for calibration
+signal count_updown : integer := 1;	-- ensures proper delay for movement
+signal count_display : integer range 0 to 3 := 0; -- flips between 7-seg displays
 
 signal stepper_en : std_logic := '0'; -- toggles between 1 and 0 for the stepper motor
 signal calibrated : std_logic := '0'; 
 	
-constant max_speed : integer := g_max_speed;
+constant max_speed : integer := g_max_speed; -- Set range/size, do not need 32 bits
 constant cal_speed : integer := g_cal_speed;
 constant min_speed : integer := g_min_speed;
 constant keypad_div : integer := g_keypad_div; 
@@ -71,14 +72,10 @@ constant no_steps_accel : integer := (g_min_speed - g_max_speed)/g_accel_delay; 
 
 signal current_delay : integer range (g_max_speed - g_accel_delay) to (g_min_speed + g_accel_delay) := g_min_speed; --min_speed-accelspeedcount = 30000-25000=5000, same with max_speed
 
-signal dir_tmp : std_logic := '0'; 
+signal dir_tmp : std_logic := '0'; -- decides up or down movement
 
-signal count_display : integer range 0 to 3 := 0;
-signal disp_keys : std_logic_vector(15 downto 0) := "1101110111011101"; --0000, for 4 7-seg displays
-
-signal current_position_split : std_logic_vector(15 downto 0) := "1101110111011101";
-
-signal enter : std_logic := '0'; -- only for debug
+signal disp_keys : std_logic_vector(15 downto 0) := "1101110111011101"; --0000, for 4 7-seg displays (steps)
+signal position_bcd : std_logic_vector(15 downto 0) := "1101110111011101"; -- current position on bcd format
 
 begin
 
@@ -89,7 +86,7 @@ begin
 			if reset = '0' then
 				current_key <= "1101"; 
 				previous_key <= "1101"; 
-				seg_out <= to_ReverseSevenSegment("1101"); -- 0
+				seg_out <= reverseSevenSegment_index("1101"); -- 0
 				
 				if sw_level_steps = '0' then
 					disp_nr <= "0001";
@@ -108,7 +105,6 @@ begin
 				col_index <= "01";
 				
 				count_keypad <= 1;
-				
 				count_calibrate <= 1; 
 				count_updown <= 1; 
 				
@@ -125,6 +121,9 @@ begin
 					dir <= '0';
 					en <= '0';
 					nsleep <= '0';
+					NEXT_STATE_LIFT <= stopped; 
+					--target_position <= current_position; 
+					calibrated <= '0'; 
 				end if;
 					
 				case CURRENT_STATE_LIFT is
@@ -133,11 +132,6 @@ begin
 							dir <= '0';
 							en <= '0';
 							nsleep <= '0';
-					
-							--if stop = '0' then -- if startup happens on level 0
-							--	calibrated <= '1';
-							--	current_position <= 0; 
-							--end if; 
 							
 							if current_position < target_position and calibrated = '1' then
 								NEXT_STATE_LIFT <= move; --move up
@@ -155,10 +149,6 @@ begin
 							dir <= '0';
 							en <= '1';
 							nsleep <= '1';
-							
-							--if em_stop = '0' then -- needs some action, either remember to recalibrate, or do it automatically
-							--	calibrated <= '0';
-							--	NEXT_STATE_LIFT <= idle;
 								
 							if stop = '0' then
 								calibrated <= '1';
@@ -189,15 +179,17 @@ begin
 							end if;
 									
 								
-						when move => --move_up
+						when move =>
 							dir <= dir_tmp;
 							en <= '1';
 							nsleep <= '1';
 						
+							-- if reached target
 							if (current_position >= target_position and dir_tmp = '1') or (current_position <= target_position and dir_tmp = '0') then -- at right floor (or just missed...)
 								NEXT_STATE_LIFT <= stopped; 
 							end if; 
 							
+							-- actual stepper motor movement
 							if count_updown = current_delay then 
 								count_updown <= 1; 
 								if stepper_en = '1' then 
@@ -211,21 +203,19 @@ begin
 									end if;  
 									
 									
-									
-									
 									if dir_tmp = '1' then
 										-- curren_position is delayed on cycle, EVAULATE
 										if current_position < target_position - no_steps_accel then
 											if current_delay <= max_speed then
 												current_delay <= max_speed; 
 											else
-												current_delay <= current_delay - accel_delay; --accel 
+												current_delay <= current_delay - accel_delay; --accel (make delay shorter --> faster speed)
 											end if; 
 										else 
 											if current_delay >= min_speed then
 												current_delay <= min_speed; 
 											else
-												current_delay <= current_delay + accel_delay; --deaccel 
+												current_delay <= current_delay + accel_delay; --deaccel (make delay longer --> slower speed)
 											end if; 
 										end if;
 									else
@@ -252,56 +242,34 @@ begin
 								count_updown <= count_updown + 1; 
 							end if;
 							
-							
-									if sw_level_steps = '0' then
-										disp_nr <= "0001";
-										if current_position * 2 < 1000 then -- make to_ReverseSevenSegment_int so to_ReverseSevenSegment(1); gives same as "0000"
-											seg_out <= to_ReverseSevenSegment("1101"); 
-										elsif current_position * 2  < 2000 then 			-- CAHNGE *2 (refactor), 
-											seg_out <= to_ReverseSevenSegment("0000");
-										elsif current_position * 2  < 3000 then
-											seg_out <= to_ReverseSevenSegment("0001");
-										elsif current_position * 2  < 4000 then
-											seg_out <= to_ReverseSevenSegment("0010");
-										elsif current_position * 2  < 5000 then
-											seg_out <= to_ReverseSevenSegment("0100");
-										elsif current_position * 2  < 6000 then
-											seg_out <= to_ReverseSevenSegment("0101");
-										elsif current_position * 2  = 6000 then
-											seg_out <= to_ReverseSevenSegment("0110");
-										else
-											
-										end if;
-									else 
-										if count_keypad = keypad_div then 
-											current_position_split <= int_to_binary_position(current_position * 2);
-											
-											case count_display is
-												when 0 =>
-														disp_nr <= "1000";
-														seg_out <= SevenSegment_logical(current_position_split(3 downto 0));
-										
-												when 1 =>
-														disp_nr <= "0100";
-														seg_out <= SevenSegment_logical(current_position_split(7 downto 4));
-										
-												when 2 =>
-														disp_nr <= "0010";
-														seg_out <= SevenSegment_logical(current_position_split(11 downto 8));
-										
-												when 3 =>
-														disp_nr <= "0001";
-														seg_out <= SevenSegment_logical(current_position_split(15 downto 12));
-										
-												when others =>
-					
-											end case;
-											
-										end if; 
-									end if;
+							-- live level/steps display
+							position_bcd <= int13b_to_bcd16b(current_position * 2);
+							if sw_level_steps = '0' then
+								disp_nr <= "0001";
+								seg_out <= reverseSevenSegment_binary(position_bcd(15 downto 12));
+							else 
+								if count_keypad = keypad_div then 											
+									case count_display is
+										when 0 =>
+												disp_nr <= "1000";
+												seg_out <= reverseSevenSegment_binary(position_bcd(3 downto 0));
+										when 1 =>
+												disp_nr <= "0100";
+												seg_out <= reverseSevenSegment_binary(position_bcd(7 downto 4));
+										when 2 =>
+												disp_nr <= "0010";
+												seg_out <= reverseSevenSegment_binary(position_bcd(11 downto 8));
+										when 3 =>
+												disp_nr <= "0001";
+												seg_out <= reverseSevenSegment_binary(position_bcd(15 downto 12));
+										when others =>
+									end case;
+									
+								end if; 
+							end if;
 							
 
-						when stopped =>
+						when stopped => -- remove? existed for debug
 							NEXT_STATE_LIFT <= idle;
 							
 							
@@ -313,20 +281,17 @@ begin
 							stepper_en <= '0';
 							NEXT_STATE_LIFT <= idle;
 					end case;	
-				
-				
+						
 				count_keypad <= count_keypad + 1; 	
-				
+			
+			
 				if count_keypad = keypad_div then 
 					count_keypad <= 1; 
 					CURRENT_STATE_KEYPAD <= NEXT_STATE_KEYPAD;
-					
 	
 					case CURRENT_STATE_KEYPAD is
 						when idle =>
-							NEXT_STATE_KEYPAD <= col0;
-							
-						-- since keypad matrix is flipped, col0 --> col3 = logical (to me) 
+							NEXT_STATE_KEYPAD <= col0;	-- since keypad matrix is flipped, col0 --> col3 = logical (to me) 
 						when col0 =>
 							column <= "0111";
 							col_index <= "11";
@@ -366,28 +331,23 @@ begin
 					if CURRENT_STATE_LIFT /= move then 
 						if sw_level_steps = '0' then
 							disp_nr <= "0001";
-							seg_out <= to_ReverseSevenSegment(current_key);
+							seg_out <= reverseSevenSegment_index(current_key);
 					
 						else
 							case count_display is
 								when 0 =>
 										disp_nr <= "1000";
-										seg_out <= to_ReverseSevenSegment(disp_keys(3 downto 0));
-						
+										seg_out <= reverseSevenSegment_index(disp_keys(3 downto 0));						
 								when 1 =>
 										disp_nr <= "0100";
-										seg_out <= to_ReverseSevenSegment(disp_keys(7 downto 4));
-						
+										seg_out <= reverseSevenSegment_index(disp_keys(7 downto 4));						
 								when 2 =>
 										disp_nr <= "0010";
-										seg_out <= to_ReverseSevenSegment(disp_keys(11 downto 8));
-						
+										seg_out <= reverseSevenSegment_index(disp_keys(11 downto 8));
 								when 3 =>
 										disp_nr <= "0001";
-										seg_out <= to_ReverseSevenSegment(disp_keys(15 downto 12));
-						
-								when others =>
-				
+										seg_out <= reverseSevenSegment_index(disp_keys(15 downto 12));						
+								when others =>				
 							end case;
 						end if; 
 					end if; 
@@ -402,18 +362,13 @@ begin
 					
 					-- * pressed (enter)
 					if current_key = "1100" then
-						led1_out <= '1';
 						current_key <= previous_key; 
-						enter <= '1'; 
 						
 						if sw_level_steps = '0' then
 							target_position <= key_to_step_level(previous_key) / 2; -- so step counter can increent by +1 and not +2, odd numbers gets floored
 						else
 							target_position <= key_to_step_steps(disp_keys) / 2;
 						end if; 
-						
-					else
-						led1_out <= '0'; 
 					end if; 
 				
 				end if;
