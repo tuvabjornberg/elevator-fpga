@@ -2,8 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.ReverseSevenSegmentDecoding.all;
-use work.keypad_func.all;
+use work.display_func.all;
+use work.lift_controller_func.all;
 
 entity display is
 	generic(
@@ -42,12 +42,14 @@ begin
 			if reset='0' then
 				count <= 0;
 				display_id <= 0;
+				seg_out <= "1111110";
+				if mode_level_steps = '0' then
+					disp_nr <= "0001";
+				else 
+					disp_nr <= "1111";
+				end if; 
 		
-			elsif rising_edge(clk) then
-			
-				-- live level/steps display
-				position_bcd <= int13b_to_bcd16b(current_position * 2);
-	
+			elsif rising_edge(clk) then	
 	
 				if count = div then
 					count <= 0;
@@ -62,6 +64,9 @@ begin
 				end if;
 			
 				if display_mode = '1' then -- current elevator movement
+					-- live level/steps display
+					position_bcd <= int13b_to_bcd16b(current_position * 2);
+					
 					if mode_level_steps = '0' then -- level
 		
 						disp_nr <= "0001";
@@ -91,7 +96,7 @@ begin
 					if mode_level_steps = '0' then -- level
 		
 						disp_nr <= "0001";
-						seg_out <= reverseSevenSegment_index(disp_keys(3 downto 0));
+						seg_out <= reverseSevenSegment_index(disp_keys(15 downto 12));
 		
 					else -- steps
 						case display_id is

@@ -2,8 +2,9 @@ library ieee;
 use ieee.std_logic_1164.all; 
 use ieee.numeric_std.all;
 
-use work.ReverseSevenSegmentDecoding.all;
+use work.display_func.all;
 use work.keypad_func.all;
+use work.lift_controller_func.all;
 
 
 entity elevator is
@@ -38,8 +39,8 @@ entity elevator is
 end entity;
 
 architecture rtl of elevator is	
-signal previous_key : std_logic_vector (3 downto 0) := "1101";
-signal current_key : std_logic_vector(3 downto 0) := "1101"; -- 1101 = index 13 = "0" on keypad
+signal previous_key : std_logic_vector (3 downto 0) := "0010";
+signal current_key : std_logic_vector(3 downto 0) := "0010"; -- 0010 = "0" on keypad
 
 signal current_position : integer range 0 to 6550 := 0; 
 signal target_position : integer range 0 to 6550 := 0; 
@@ -110,10 +111,10 @@ begin
 		begin
 						
 			if reset = '0' then
-				current_key <= "1101"; 
-				previous_key <= "1101"; 
+				current_key <= "0010"; 
+				previous_key <= "0010"; 
 
-				disp_keys <= "1101110111011101";
+				disp_keys <= "0010001000100010";
 				
 				target_position <= 0; 			
 				
@@ -125,29 +126,34 @@ begin
 					display_mode <= '0'; -- keypad input --show_key_index;
 				end if;
 								
-					if key_valid = '1' then
-						current_key <= key_decoded;
-						previous_key <= current_key; 
-					
-						if current_key /= previous_key then -- problem: cannot press same digit twice
+				if key_valid = '1' then
+					current_key <= key_decoded;
+					previous_key <= current_key; 
+				
+					if current_key /= previous_key then -- problem: cannot press same digit twice
+						if mode_level_steps = '1' then
 							disp_keys(15 downto 12) <= disp_keys(11 downto 8);
 							disp_keys(11 downto 8) <= disp_keys(7 downto 4);
 							disp_keys(7 downto 4) <= disp_keys(3 downto 0);
 							disp_keys(3 downto 0) <= current_key;
-						end if; 
-						
-					end if;
-					
-					-- * pressed (enter)
-					if current_key = "1100" then
-						current_key <= previous_key; 
-						
-						if mode_level_steps = '0' then
-							target_position <= key_to_step_level(previous_key) / 2; -- so step counter can increent by +1 and not +2, odd numbers gets floored
-						else
-							target_position <= key_to_step_steps(disp_keys) / 2;
+						else 
+							disp_keys(15 downto 12) <= current_key;
+							disp_keys(11 downto 0) <= (others => '0');
 						end if; 
 					end if; 
+					
+				end if;
+				
+				-- * pressed (enter)
+				if current_key = "0011" then
+					current_key <= previous_key; 
+					
+					if mode_level_steps = '0' then
+						target_position <= key_to_step_level(previous_key) / 2; -- so step counter can increent by +1 and not +2, odd numbers gets floored
+					else
+						target_position <= key_to_step_steps(disp_keys) / 2;
+					end if; 
+				end if; 
 								
 			end if; 
     

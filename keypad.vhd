@@ -30,7 +30,6 @@ signal NEXT_STATE : STATE_TYPE;
 
 signal count : integer := 0;
 
-signal prev_row : std_logic_vector(3 downto 0) := "1111";
 signal col_index : std_logic_vector(1 downto 0);
 constant div : integer := g_keypad_div; 
 
@@ -52,37 +51,35 @@ begin
 		
 						case CURRENT_STATE is
 							when idle =>
-								NEXT_STATE <= col0;	-- since keypad matrix is flipped, col0 --> col3 = logical (to me) 
+								NEXT_STATE <= col0;
 							when col0 =>
 								column <= "0111";
-								col_index <= "11";
-								NEXT_STATE <= col1;
+								col_index <= "00"; -- lower right corner
+								NEXT_STATE <= col1; 
 		
 							when col1 =>
 								column <= "1011";
-								col_index <= "10";
+								col_index <= "01";
 								NEXT_STATE <= col2;
 		
 							when col2 =>
 								column <= "1101";
-								col_index <= "01";
+								col_index <= "10";
 								NEXT_STATE <= col3;
 		
 							when col3 =>
 								column <= "1110";
-								col_index <= "00";
+								col_index <= "11"; -- higher left corner
 								NEXT_STATE <= idle;
 							when others =>
 									NEXT_STATE <= idle;
 						end case;
 		
-						-- no key press and delay for debouncing
-						if row /= "1111" and prev_row = "1111" then
+						-- no key press, TODO: needs debouncing support
+						if row /= "1111" then
 							key_decoded <= map_key(decode_row(row), col_index);
 							key_valid <= '1';
 						end if;
-		
-						prev_row <= row;
 		
 				else
 						count <= count + 1;

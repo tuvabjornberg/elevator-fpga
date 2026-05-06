@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.keypad_func.all;
+use work.lift_controller_func.all;
 
 entity lift_controller is
 	generic(
@@ -144,6 +144,8 @@ begin
 							if (current_position >= target_position and dir_tmp = '1') or (current_position <= target_position and dir_tmp = '0') then -- at right floor (or just missed...)
 								NEXT_STATE_LIFT <= stopped; 
 								moving <= '0'; 
+							else
+								NEXT_STATE_LIFT <= move;
 							end if; 
 							
 							-- actual stepper motor movement
