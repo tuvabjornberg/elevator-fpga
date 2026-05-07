@@ -26,29 +26,29 @@ package body lift_controller_func is
 		
 		begin
 			case key is 				
-					when "1111" => int := 1; -- "1"
-					when "1110" => int := 2; -- "2"
-					when "1101" => int := 3; -- "3"
-					--when "0011" =>  := ; -- "A"
-					
-					when "1011" => int := 4; -- "4"
-					when "1010" => int := 5; -- "5"
-					when "1001" => int := 6; -- "6"
-					--when "0111" =>  := ; -- "B"
-	
-					when "0111" => int := 7; -- "7"
-					when "0110" => int := 8; -- "8"
-					when "0101" => int := 9; -- "9"
-					--when "1011" => 	:= ; -- C
-					--
-					--when "1100" => 	:= ; -- */E
-					when "0010" => int := 0; -- 0
-					--when "1110" => 	:= ; -- #/F
-					--when "1111" => 	:= ; -- D
-					
-					when others => int := 0;
-					
-				end case;
+				when "1111" => int := 1; -- "1"
+				when "1110" => int := 2; -- "2"
+				when "1101" => int := 3; -- "3"
+				--when "0011" =>  := ; -- "A"
+				
+				when "1011" => int := 4; -- "4"
+				when "1010" => int := 5; -- "5"
+				when "1001" => int := 6; -- "6"
+				--when "0111" =>  := ; -- "B"
+
+				when "0111" => int := 7; -- "7"
+				when "0110" => int := 8; -- "8"
+				when "0101" => int := 9; -- "9"
+				--when "1011" => 	:= ; -- C
+				--
+				--when "1100" => 	:= ; -- */E
+				when "0010" => int := 0; -- 0
+				--when "1110" => 	:= ; -- #/F
+				--when "1111" => 	:= ; -- D
+				
+				when others => int := 0;
+				
+			end case;
 				
 		return int; 
 		

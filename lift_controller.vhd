@@ -54,7 +54,6 @@ signal current_delay : integer range (g_max_speed - g_accel_delay) to (g_min_spe
 signal current_position : integer range 0 to 6549;
 
 begin
-
 	process(clk, reset)
 		begin
 			if reset = '0' then
@@ -82,140 +81,132 @@ begin
 				end if;
 					
 				case CURRENT_STATE_LIFT is
-						when idle =>
-							step <= '0';
-							dir <= '0';
-							en <= '0';
-							nsleep <= '0';
-							
-							if current_position < target_position and calibrated = '1' then
-								NEXT_STATE_LIFT <= move; --move up
-								dir_tmp <= '1';
-							elsif current_position > target_position  and calibrated = '1' then
-								NEXT_STATE_LIFT <= move; --move down 
-								dir_tmp <= '0';
-							else
-								NEXT_STATE_LIFT <= idle;
-							end if;
-								
-							
-		  
-						when calibrate =>
-							dir <= '0';
-							en <= '1';
-							nsleep <= '1';
-								
-							if stop = '0' then
-								calibrated <= '1';
-								current_position <= 0; 
-								
-								NEXT_STATE_LIFT <= stopped;
-								
-							else
-								NEXT_STATE_LIFT <= calibrate;
-							end if;
-							
-							-- OBS constant speed
-							if count_calibrate = cal_speed then 
-								count_calibrate <= 1; 
-								if stepper_en = '1' then 
-									step <= '1';
-									--en <= '1';
-									--nsleep <= '1';
-									stepper_en <= '0';
-								else 
-									step <= '0'; -- now high for and entire cycle, motor technically only needs a pulse (dirac), possible to have step=1 high for 1 clk and step=0 for 12500 clk?
-									--en <= '0'; -- "Make sure the EN and nSLEEP are ON only while moving the motor, otherwise the motor gets hot." ???
-									--nsleep <= '0';
-									stepper_en <= '1';
-								end if;
-							else 
-								count_calibrate <= count_calibrate + 1; 
-							end if;
-									
-								
-						when move =>
-							dir <= dir_tmp;
-							en <= '1';
-							nsleep <= '1';
-							moving <= '1'; 
+					when idle =>
+						step <= '0';
+						dir <= '0';
+						en <= '0';
+						nsleep <= '0';
 						
-							-- if reached target
-							if (current_position >= target_position and dir_tmp = '1') or (current_position <= target_position and dir_tmp = '0') then -- at right floor (or just missed...)
-								NEXT_STATE_LIFT <= stopped; 
-								moving <= '0'; 
-							else
-								NEXT_STATE_LIFT <= move;
-							end if; 
+						if current_position < target_position and calibrated = '1' then
+							NEXT_STATE_LIFT <= move; --move up
+							dir_tmp <= '1';
+						elsif current_position > target_position  and calibrated = '1' then
+							NEXT_STATE_LIFT <= move; --move down 
+							dir_tmp <= '0';
+						else
+							NEXT_STATE_LIFT <= idle;
+						end if;
 							
-							-- actual stepper motor movement
-							if count_updown = current_delay then 
-								count_updown <= 1; 
-								if stepper_en = '1' then 
-									step <= '1';
-									stepper_en <= '0';
-									
-									if dir_tmp = '1' then --up
-										current_position <= current_position + 1; 
-									else --down
-										current_position <= current_position - 1; 
-									end if;  
-									
-									
-									if dir_tmp = '1' then
-										-- curren_position is delayed on cycle, EVAULATE
-										if current_position < target_position - no_steps_accel then
-											if current_delay <= max_speed then
-												current_delay <= max_speed; 
-											else
-												current_delay <= current_delay - accel_delay; --accel (make delay shorter --> faster speed)
-											end if; 
-										else 
-											if current_delay >= min_speed then
-												current_delay <= min_speed; 
-											else
-												current_delay <= current_delay + accel_delay; --deaccel (make delay longer --> slower speed)
-											end if; 
-										end if;
-									else
-										if current_position > target_position + no_steps_accel then 
-											if current_delay <= max_speed then
-												current_delay <= max_speed; 
-											else
-												current_delay <= current_delay - accel_delay; --accel
-											end if; 
-										else  
-											if current_delay >= min_speed then
-												current_delay <= min_speed; 
-											else
-												current_delay <= current_delay + accel_delay; --deaccel
-											end if; 
-										end if;
-									end if;
+					when calibrate =>
+						dir <= '0';
+						en <= '1';
+						nsleep <= '1';
 							
-								else 
-									step <= '0'; 
-									stepper_en <= '1';
-								end if;
+						if stop = '0' then
+							calibrated <= '1';
+							current_position <= 0; 
+							
+							NEXT_STATE_LIFT <= stopped;
+							
+						else
+							NEXT_STATE_LIFT <= calibrate;
+						end if;
+						
+						-- OBS constant speed
+						if count_calibrate = cal_speed then 
+							count_calibrate <= 1; 
+							if stepper_en = '1' then 
+								step <= '1';
+								--en <= '1';
+								--nsleep <= '1';
+								stepper_en <= '0';
 							else 
-								count_updown <= count_updown + 1; 
+								step <= '0'; -- now high for and entire cycle, motor technically only needs a pulse (dirac), possible to have step=1 high for 1 clk and step=0 for 12500 clk?
+								--en <= '0'; -- "Make sure the EN and nSLEEP are ON only while moving the motor, otherwise the motor gets hot." ???
+								--nsleep <= '0';
+								stepper_en <= '1';
 							end if;
-							
+						else 
+							count_calibrate <= count_calibrate + 1; 
+						end if;
+														
+					when move =>
+						dir <= dir_tmp;
+						en <= '1';
+						nsleep <= '1';
+						moving <= '1'; 
+					
+						-- if reached target
+						if (current_position >= target_position and dir_tmp = '1') or (current_position <= target_position and dir_tmp = '0') then -- at right floor (or just missed...)
+							NEXT_STATE_LIFT <= stopped; 
+							moving <= '0'; 
+						else
+							NEXT_STATE_LIFT <= move;
+						end if; 
+						
+						-- actual stepper motor movement
+						if count_updown = current_delay then 
+							count_updown <= 1; 
+							if stepper_en = '1' then 
+								step <= '1';
+								stepper_en <= '0';
+								
+								if dir_tmp = '1' then --up
+									current_position <= current_position + 1; 
+								else --down
+									current_position <= current_position - 1; 
+								end if;  
+								
+								if dir_tmp = '1' then
+									-- curren_position is delayed on cycle, EVAULATE
+									if current_position < target_position - no_steps_accel then
+										if current_delay <= max_speed then
+											current_delay <= max_speed; 
+										else
+											current_delay <= current_delay - accel_delay; --accel (make delay shorter --> faster speed)
+										end if; 
+									else 
+										if current_delay >= min_speed then
+											current_delay <= min_speed; 
+										else
+											current_delay <= current_delay + accel_delay; --deaccel (make delay longer --> slower speed)
+										end if; 
+									end if;
+								else
+									if current_position > target_position + no_steps_accel then 
+										if current_delay <= max_speed then
+											current_delay <= max_speed; 
+										else
+											current_delay <= current_delay - accel_delay; --accel
+										end if; 
+									else  
+										if current_delay >= min_speed then
+											current_delay <= min_speed; 
+										else
+											current_delay <= current_delay + accel_delay; --deaccel
+										end if; 
+									end if;
+								end if;
+						
+							else 
+								step <= '0'; 
+								stepper_en <= '1';
+							end if;
+						else 
+							count_updown <= count_updown + 1; 
+						end if;					
 
-						when stopped => -- remove? existed for debug
-							NEXT_STATE_LIFT <= idle;
-							
-							
-						when others =>
-							step <= '0';
-							dir <= '0';
-							en <= '0';
-							nsleep <= '0';
-							stepper_en <= '0';
-							NEXT_STATE_LIFT <= idle;
-					end case;
+					when stopped => -- remove? existed for debug
+						NEXT_STATE_LIFT <= idle;
+										
+					when others =>
+						step <= '0';
+						dir <= '0';
+						en <= '0';
+						nsleep <= '0';
+						stepper_en <= '0';
+						NEXT_STATE_LIFT <= idle;
+				end case;
 			end if; 
-		
 	end process;
-	
 end rtl; 

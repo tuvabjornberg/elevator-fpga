@@ -38,14 +38,13 @@ SIGNAL dir : STD_LOGIC;
 SIGNAL disp_nr : STD_LOGIC_VECTOR(3 DOWNTO 0);
 SIGNAL em_stop : STD_LOGIC;
 SIGNAL en : STD_LOGIC;
-SIGNAL led1_out : STD_LOGIC;
 SIGNAL nsleep : STD_LOGIC;
 SIGNAL reset : STD_LOGIC;
 SIGNAL row : STD_LOGIC_VECTOR(3 DOWNTO 0);
 SIGNAL seg_out : STD_LOGIC_VECTOR(6 DOWNTO 0);
 SIGNAL step : STD_LOGIC;
 SIGNAL stop : STD_LOGIC;
-SIGNAL sw_level_steps : STD_LOGIC; 
+SIGNAL mode_level_steps : STD_LOGIC; 
 COMPONENT elevator
 	PORT (
 	clk : IN STD_LOGIC;
@@ -54,14 +53,13 @@ COMPONENT elevator
 	disp_nr : BUFFER STD_LOGIC_VECTOR(3 DOWNTO 0);
 	em_stop : IN STD_LOGIC;
 	en : INOUT STD_LOGIC;
-	led1_out : BUFFER STD_LOGIC;
 	nsleep : BUFFER STD_LOGIC;
 	reset : IN STD_LOGIC;
 	row : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
 	seg_out : BUFFER STD_LOGIC_VECTOR(6 DOWNTO 0);
 	step : BUFFER STD_LOGIC;
 	stop : IN STD_LOGIC;
-	sw_level_steps : IN STD_LOGIC
+	mode_level_steps : IN STD_LOGIC
 	);
 END COMPONENT;
 BEGIN
@@ -82,14 +80,13 @@ BEGIN
 	disp_nr => disp_nr,
 	em_stop => em_stop,
 	en => en,
-	led1_out => led1_out,
 	nsleep => nsleep,
 	reset => reset,
 	row => row,
 	seg_out => seg_out,
 	step => step,
 	stop => stop,
-	sw_level_steps => sw_level_steps
+	mode_level_steps => mode_level_steps
 	);
 init : PROCESS                                               
 -- variable declarations                                     
@@ -116,7 +113,7 @@ BEGIN
 	stop <= '0';
 	em_stop <= '1';
 	reset <= '1';
-	sw_level_steps <= '0';
+	mode_level_steps <= '1';
 	
 	wait for 1 ms;
 	reset <= '0';
@@ -132,7 +129,25 @@ BEGIN
 	wait until column = "1011";  -- 3
 	row <= "1110";              
 	wait for 5 ms;
-	row <= "1111";     
+	row <= "1111";  
+
+	wait for 5 ms;
+	wait until column = "1101";  -- 0
+	row <= "0111";              
+	wait for 5 ms;
+	row <= "1111"; 
+
+	wait for 5 ms;
+	wait until column = "1110";  -- 4
+	row <= "1101";              
+	wait for 5 ms;
+	row <= "1111"; 
+
+	wait for 5 ms;
+	wait until column = "1101";  -- 2
+	row <= "1110";              
+	wait for 5 ms;
+	row <= "1111"; 
 	
 	wait for 5 ms;
 	wait until column = "1110";  -- *
@@ -140,8 +155,11 @@ BEGIN
 	wait for 5 ms;
 	row <= "1111"; 
 	
-	wait for 42000 ms;
+
 	
+	wait for 50000 ms;
+	
+	mode_level_steps <= '0';
 	
 	wait for 5 ms;
 	wait until column = "1101";  -- 2
@@ -161,48 +179,5 @@ BEGIN
 	
 END PROCESS always;  
 
-
---always : PROCESS
---BEGIN
---    -- init
---    row <= "1111";
---    stop <= '0';
---    em_stop <= '1';
---    reset <= '0';
---
---    -- reset pulse (active low assumed)
---    wait for 1 us;
---    reset <= '1';
---
---    -- loop test multiple times
---    --for i in 0 to 2 loop
---
---        -- simulate stop button
---        wait for 10 us;
---        stop <= '1';
---        wait for 10 us;
---        stop <= '0';
---
---        -- press "3"
---        wait until column = "1011";
---        row <= "1110";
---        wait for 5 us;
---        row <= "1111";
---
---        -- press "*"
---        wait until column = "1110";
---        row <= "0111";
---        wait for 5 us;
---        row <= "1111";
---
---        -- let system run
---        wait for 50 us;  
---	
---
---    --end loop;
---
---    wait;
---END PROCESS;
---
 	                                      
 END elevator_arch;

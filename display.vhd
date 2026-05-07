@@ -17,7 +17,7 @@ entity display is
 		current_position : in integer range 0 to 6549;
 
 		disp_keys : in std_logic_vector(15 downto 0);
-		display_mode : in std_logic;
+		moving : in std_logic;
 		seg_out : out std_logic_vector(6 downto 0);
 		disp_nr : out std_logic_vector(3 downto 0);
 		
@@ -36,13 +36,13 @@ signal position_bcd : std_logic_vector(15 downto 0);
 constant div : integer := g_keypad_div; 
 
 begin
-
 	process(clk, reset)
 		begin
 			if reset='0' then
 				count <= 0;
 				display_id <= 0;
 				seg_out <= "1111110";
+				
 				if mode_level_steps = '0' then
 					disp_nr <= "0001";
 				else 
@@ -63,7 +63,7 @@ begin
 					count <= count + 1;			
 				end if;
 			
-				if display_mode = '1' then -- current elevator movement
+				if moving = '1' then -- current elevator movement
 					-- live level/steps display
 					position_bcd <= int13b_to_bcd16b(current_position * 2);
 					
@@ -118,5 +118,4 @@ begin
 				end if;
 		end if;
 	end process;
-
 end rtl;

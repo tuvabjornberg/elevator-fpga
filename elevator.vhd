@@ -35,7 +35,7 @@ entity elevator is
 		
 		mode_level_steps : in std_logic -- 0 = level, 1 = steps, for input on keypad
 	);
-
+	
 end entity;
 
 architecture rtl of elevator is	
@@ -47,9 +47,7 @@ signal target_position : integer range 0 to 6550 := 0;
 
 signal key_decoded : std_logic_vector(3 downto 0);
 signal key_valid : std_logic;
-
 signal disp_keys : std_logic_vector(15 downto 0);
-signal display_mode : std_logic; 
 
 signal moving : std_logic; 
 
@@ -67,8 +65,7 @@ begin
 			key_decoded => key_decoded,
 			key_valid => key_valid
 		);
-
-		
+	
 	display : entity work.display
 		generic map(
 			g_keypad_div => g_keypad_div
@@ -80,7 +77,7 @@ begin
 			disp_keys => disp_keys,
 			seg_out => seg_out,
 			disp_nr => disp_nr,
-			display_mode => display_mode,
+			moving => moving,
 			current_position => current_position
 		);
 		
@@ -89,8 +86,7 @@ begin
 			g_max_speed => g_max_speed, 
 			g_cal_speed => g_cal_speed,
 			g_min_speed => g_min_speed,
-			g_accel_delay => g_accel_delay
-		
+			g_accel_delay => g_accel_delay		
 		)
 		port map(
 			clk => clk,
@@ -107,9 +103,8 @@ begin
 		);
 
 	process(clk, reset)
-		
 		begin
-						
+		
 			if reset = '0' then
 				current_key <= "0010"; 
 				previous_key <= "0010"; 
@@ -118,14 +113,7 @@ begin
 				
 				target_position <= 0; 			
 				
-			elsif rising_edge(clk) then					
-			
-				if moving = '1' then
-					display_mode <= '1'; -- movement of elevator --show_position_bcd;
-				else
-					display_mode <= '0'; -- keypad input --show_key_index;
-				end if;
-								
+			elsif rising_edge(clk) then													
 				if key_valid = '1' then
 					current_key <= key_decoded;
 					previous_key <= current_key; 
@@ -153,12 +141,8 @@ begin
 					else
 						target_position <= key_to_step_steps(disp_keys) / 2;
 					end if; 
-				end if; 
-								
+				end if; 		
 			end if; 
-    
     end process;
-	 
-
 end rtl;
 

@@ -12,14 +12,13 @@ SIGNAL dir : STD_LOGIC;
 SIGNAL disp_nr : STD_LOGIC_VECTOR(3 DOWNTO 0);
 SIGNAL em_stop : STD_LOGIC;
 SIGNAL en : STD_LOGIC;
-SIGNAL led1_out : STD_LOGIC;
 SIGNAL nsleep : STD_LOGIC;
 SIGNAL reset : STD_LOGIC;
 SIGNAL row : STD_LOGIC_VECTOR(3 DOWNTO 0);
 SIGNAL seg_out : STD_LOGIC_VECTOR(6 DOWNTO 0);
 SIGNAL step : STD_LOGIC;
 SIGNAL stop : STD_LOGIC;
-SIGNAL sw_level_steps : STD_LOGIC; 
+SIGNAL mode_level_steps : STD_LOGIC; 
 COMPONENT elevator
 	PORT (
 	clk : IN STD_LOGIC;
@@ -28,14 +27,13 @@ COMPONENT elevator
 	disp_nr : BUFFER STD_LOGIC_VECTOR(3 DOWNTO 0);
 	em_stop : IN STD_LOGIC;
 	en : INOUT STD_LOGIC;
-	led1_out : BUFFER STD_LOGIC;
 	nsleep : BUFFER STD_LOGIC;
 	reset : IN STD_LOGIC;
 	row : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
 	seg_out : BUFFER STD_LOGIC_VECTOR(6 DOWNTO 0);
 	step : BUFFER STD_LOGIC;
 	stop : IN STD_LOGIC;
-	sw_level_steps : IN STD_LOGIC
+	mode_level_steps : IN STD_LOGIC
 	);
 END COMPONENT;
 BEGIN
@@ -56,14 +54,13 @@ BEGIN
 	disp_nr => disp_nr,
 	em_stop => em_stop,
 	en => en,
-	led1_out => led1_out,
 	nsleep => nsleep,
 	reset => reset,
 	row => row,
 	seg_out => seg_out,
 	step => step,
 	stop => stop,
-	sw_level_steps => sw_level_steps
+	mode_level_steps => mode_level_steps
 	);
 init : PROCESS                                               
 -- variable declarations                                     
@@ -90,7 +87,7 @@ BEGIN
 	stop <= '0';
 	em_stop <= '1';
 	reset <= '1';
-	sw_level_steps <= '0';
+	mode_level_steps <= '1';
 	
 	wait for 1 ms;
 	reset <= '0';

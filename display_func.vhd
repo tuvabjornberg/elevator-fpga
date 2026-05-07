@@ -50,6 +50,7 @@ package body display_func is
 			end case;
 										
 			return out_i; 
+			
 	end function reverseSevenSegment_index;
 	
 	function reverseSevenSegment_binary(i: in std_logic_vector(3 downto 0)) return
@@ -83,7 +84,8 @@ package body display_func is
 
 			end case;
 										
-			return out_i; 
+			return out_i;
+			
 	end function reverseSevenSegment_binary;
 	
 	function int13b_to_bcd16b(position : in integer) return
@@ -118,8 +120,7 @@ package body display_func is
 			
 			position_bcd := std_logic_vector(scratch(28 downto 13));
 			
-			return position_bcd; 
-			
+			return position_bcd; 		
 		
 	end function int13b_to_bcd16b; 
 	
