@@ -67,7 +67,7 @@ begin
 					-- live level/steps display
 					position_bcd <= int13b_to_bcd16b(current_position * 2);
 					
-					if mode_level_steps = '0' then -- level
+					if mode_level_steps = '0' then -- floor
 		
 						disp_nr <= "0001";
 						seg_out <= reverseSevenSegment_binary(position_bcd(15 downto 12));
@@ -93,7 +93,7 @@ begin
 						end case;
 					end if;
 				else -- keypad input, desired position
-					if mode_level_steps = '0' then -- level
+					if mode_level_steps = '0' then -- floor
 		
 						disp_nr <= "0001";
 						seg_out <= reverseSevenSegment_index(disp_keys(15 downto 12));

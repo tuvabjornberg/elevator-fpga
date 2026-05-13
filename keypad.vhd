@@ -33,57 +33,64 @@ signal count : integer := 0;
 signal col_index : std_logic_vector(1 downto 0);
 constant div : integer := g_keypad_div; 
 
+signal key_pressed : std_logic := '0';
+
 begin
 	process(clk, reset)
 		begin
 			if reset = '0' then
-				NEXT_STATE <= idle;
+				CURRENT_STATE <= col0;
+				NEXT_STATE <= col0;
 				count <= 0;
 				key_valid <= '0';
-		
+				key_pressed <= '0';
+				key_decoded <= "0010";
+
 			elsif rising_edge(clk) then
 				key_valid <= '0';
-		
+				
 				if count = div then
 					count <= 0;
 					CURRENT_STATE <= NEXT_STATE;
-		
-					case CURRENT_STATE is
-						when idle =>
-							NEXT_STATE <= col0;
-						when col0 =>
-							column <= "0111";
-							col_index <= "00"; -- lower right corner
-							NEXT_STATE <= col1; 
-	
-						when col1 =>
-							column <= "1011";
-							col_index <= "01";
-							NEXT_STATE <= col2;
-	
-						when col2 =>
-							column <= "1101";
-							col_index <= "10";
-							NEXT_STATE <= col3;
-	
-						when col3 =>
-							column <= "1110";
-							col_index <= "11"; -- higher left corner
-							NEXT_STATE <= idle;
-						when others =>
-									NEXT_STATE <= idle;
-					end case;
-	
-					-- no key press, TODO: needs debouncing support
-					if row /= "1111" then
-						key_decoded <= map_key(decode_row(row), col_index);
-						key_valid <= '1';
+					
+					if row = "1111" then
+						key_pressed <= '0';
+						case CURRENT_STATE is
+							when col0 => 
+								column <= "0111"; -- right most column
+								col_index <= "00";
+								NEXT_STATE <= col1;
+				
+							when col1 => 
+								column <= "1011"; 
+								col_index <= "01";
+								NEXT_STATE <= col2;
+				
+							when col2 => 
+								column <= "1101"; 
+								col_index <= "10";
+								NEXT_STATE <= col3;
+				
+							when col3 => 
+								column <= "1110"; -- left most column
+								col_index <= "11";
+								NEXT_STATE <= col0;
+				
+							when others =>
+								NEXT_STATE <= idle;
+							
+						end case;
+					else
+						if key_pressed = '0' then
+							key_decoded <= map_key(decode_row(row), col_index);
+							key_valid <= '1';
+							key_pressed <= '1';
+						end if;
 					end if;
-		
 				else
 					count <= count + 1;
 				end if;
 			end if;
-	end process;
+		end process;
 end rtl;
 					

@@ -78,6 +78,7 @@ begin
 					nsleep <= '0';
 					NEXT_STATE_LIFT <= stopped; 
 					calibrated <= '0'; 
+					current_position <= target_position;
 				end if;
 					
 				case CURRENT_STATE_LIFT is

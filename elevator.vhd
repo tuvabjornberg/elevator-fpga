@@ -39,9 +39,6 @@ entity elevator is
 end entity;
 
 architecture rtl of elevator is	
-signal previous_key : std_logic_vector (3 downto 0) := "0010";
-signal current_key : std_logic_vector(3 downto 0) := "0010"; -- 0010 = "0" on keypad
-
 signal current_position : integer range 0 to 6550 := 0; 
 signal target_position : integer range 0 to 6550 := 0; 
 
@@ -103,45 +100,34 @@ begin
 		);
 
 	process(clk, reset)
+		
 		begin
 		
 			if reset = '0' then
-				current_key <= "0010"; 
-				previous_key <= "0010"; 
-
 				disp_keys <= "0010001000100010";
 				
-				target_position <= 0; 			
+				target_position <= 0; 		
 				
-			elsif rising_edge(clk) then													
-				if key_valid = '1' then
-					current_key <= key_decoded;
-					previous_key <= current_key; 
+			elsif rising_edge(clk) then	
 				
-					if current_key /= previous_key then -- problem: cannot press same digit twice
-						if mode_level_steps = '1' then
-							disp_keys(15 downto 12) <= disp_keys(11 downto 8);
-							disp_keys(11 downto 8) <= disp_keys(7 downto 4);
-							disp_keys(7 downto 4) <= disp_keys(3 downto 0);
-							disp_keys(3 downto 0) <= current_key;
-						else 
-							disp_keys(15 downto 12) <= current_key;
+				if key_valid = '1' then				
+					if key_decoded = "0011" then
+						if mode_level_steps = '1' then -- steps
+							target_position <= key_to_step_steps(disp_keys) / 2;
+						else -- floor
+							target_position <= key_to_step_level(disp_keys(15 downto 12)) / 2; -- so step counter can increent by +1 and not +2, odd numbers gets floored							
+						end if; 
+						
+					else 				
+						if mode_level_steps = '1' then -- steps
+							disp_keys(15 downto 4) <= disp_keys(11 downto 0);
+							disp_keys(3 downto 0) <= key_decoded;
+						else -- floor
+							disp_keys(15 downto 12) <= key_decoded;
 							disp_keys(11 downto 0) <= (others => '0');
 						end if; 
-					end if; 
-					
+					end if;
 				end if;
-				
-				-- * pressed (enter)
-				if current_key = "0011" then
-					current_key <= previous_key; 
-					
-					if mode_level_steps = '0' then
-						target_position <= key_to_step_level(previous_key) / 2; -- so step counter can increent by +1 and not +2, odd numbers gets floored
-					else
-						target_position <= key_to_step_steps(disp_keys) / 2;
-					end if; 
-				end if; 		
 			end if; 
     end process;
 end rtl;

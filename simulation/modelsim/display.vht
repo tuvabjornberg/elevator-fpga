@@ -103,20 +103,20 @@ BEGIN
 	wait for 5 ms;
 	wait until column = "1011";  -- 3
 	row <= "1110";              
-	wait for 5 ms;
+	wait for 50 ms;
 	row <= "1111";	
 	
 	wait for 5 ms;
 	wait until column = "1110";  -- 1
 	row <= "1110";              
-	wait for 5 ms;
+	wait for 50 ms;
 	row <= "1111"; 
 
 	wait for 5 ms;
-	wait until column = "1110";  -- 4
-	row <= "1101";              
-	wait for 5 ms;
-	row <= "1111"; 
+	wait until column = "1110";  -- 1
+	row <= "1110";              
+	wait for 50 ms;
+	row <= "1111";  
 	
 	wait for 5 ms;
 	wait until column = "1110";  -- 7
